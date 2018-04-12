@@ -1,40 +1,53 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
 
-def parse_posts(child):
+#from an xml element containing a post to a dictionary
+def parse_post(elem):
     
         post = dict()
-        postId = child.attrib.get('Id')
+        postId = elem.attrib.get('Id')
         post['Id'] = postId
-        body = child.attrib.get('Body')
+        body = elem.attrib.get('Body')
         post['Body'] = body
-        title = child.attrib.get('Title')
+        title = elem.attrib.get('Title')
         post['Title'] = title
         return post
-
-def parse_links(child):
+    
+#from an xml element containing link between two duplicated posts to a dictionary
+def parse_link(elem):
     link = dict()
-    link['Post1'] = child.attrib.get('PostId')
-    link['Post2'] = child.attrib.get('RelatedPostId')
+    link['Post1'] = elem.attrib.get('PostId')
+    link['Post2'] = elem.attrib.get('RelatedPostId')
     link['Duplicate'] = 1
     return link
     
-
+# parsing Posts.xml into a pandas dataframe
 root_posts = ET.parse('Posts.xml').getroot()
-posts = [ parse_posts(child) for child in root_posts.findall("./row[@PostTypeId='1']")]
-dataframe_posts = pd.DataFrame.from_records(posts)
+posts_ls = [ parse_post(elem) for elem in root_posts.findall("./row[@PostTypeId='1']")]
+posts_df = pd.DataFrame.from_records(posts_ls)
 
+# parsing PostLinks.xml into a pandas dataframe
 root_links = ET.parse('PostLinks.xml').getroot()
-links = [ parse_links(child) for child in root_links.findall("./row[@LinkTypeId='3']")]
-dataframe_links = pd.DataFrame.from_records(links)
+dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']")]
+dup_df = pd.DataFrame.from_records(dup_ls)
 
-non_dup_df = pd.DataFrame(np.random.randint(0, dataframe_posts.shape[0], size=(dataframe_links.shape[0],2)), columns=['Post1', 'Post2'])
-non_dup_df = non_dup_df.apply(lambda x : x if x['Post1'] != x['Post2'] else print("Duplicated found"), axis=1)
-merge_df = pd.merge(dataframe_links, non_dup_df)
-merge2_df= pd.merge(dataframe_links, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Post2':'Post1'}))
+# generate a dataframe of random pairs of post indexes
+non_dup_df = pd.DataFrame(np.random.randint(0, posts_df.shape[0], size=(dup_df.shape[0],2)), columns=['Post1', 'Post2'])
+# substitute indexes with PostIds
+non_dup_df = non_dup_df.apply(lambda x : [posts_df.loc[x['Post1'], 'Id'], posts_df.loc[x['Post2'], 'Id']], axis=1)
+
+# check that there are no pairs with the same postId
+non_dup_df = non_dup_df.apply(lambda x : x if x['Post1'] != x['Post2'] else print("Error: same pair founded", x), axis=1)
+
+# check that the generated pairs are actually non-duplicated
+if (pd.merge(dup_df, non_dup_df).shape[0]!=0):
+    print("Error: duplicate found")
+if (pd.merge(dup_df, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Post2':'Post1'})).shape[0]!=0):
+    print("Error: duplicate found")
 
 
 
