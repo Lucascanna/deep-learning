@@ -49,5 +49,29 @@ if (pd.merge(dup_df, non_dup_df).shape[0]!=0):
 if (pd.merge(dup_df, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Post2':'Post1'})).shape[0]!=0):
     print("Error: duplicate found")
 
+# add column Duplicate to non_dup_df
+non_dup_df = pd.concat([pd.DataFrame(0, index=range(non_dup_df.shape[0]), columns=['Duplicate']), non_dup_df], axis=1)
 
+# shuffling non_dup_df and dup_df
+non_dup_df = non_dup_df.sample(frac=1).reset_index(drop=True)
+dup_df = dup_df.sample(frac=1).reset_index(drop=True)
+
+# split dataset into train validation and test set
+train_index = int(non_dup_df.shape[0] * 0.8)
+validation_index = int(non_dup_df.shape[0] * 0.15) + train_index
+
+train_df = pd.concat([non_dup_df[0:train_index], dup_df[0:train_index]], ignore_index=True)
+validation_df = pd.concat([non_dup_df[train_index:validation_index], dup_df[train_index:validation_index]], ignore_index=True)
+test_df = pd.concat([non_dup_df[validation_index:], dup_df[validation_index:]], ignore_index=True)
+
+# check that the sets are disjointed
+if (pd.merge(train_df, validation_df).shape[0]!=0):
+    print("Error: Train_df and Validation_df are not disjointed")
+if (pd.merge(validation_df, test_df).shape[0]!=0):
+    print("Error: Validation_df and Test_df are not disjointed")
+
+# shuffling train_df, validation_df and test_df
+train_df = train_df.sample(frac=1).reset_index(drop=True)
+validation_df = validation_df.sample(frac=1).reset_index(drop=True)
+test_df = test_df.sample(frac=1).reset_index(drop=True)
 
