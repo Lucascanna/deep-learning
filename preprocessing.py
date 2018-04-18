@@ -48,6 +48,22 @@ if (pd.merge(dup_df, non_dup_df).shape[0]!=0):
     print("Error: duplicate found")
 if (pd.merge(dup_df, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Post2':'Post1'})).shape[0]!=0):
     print("Error: duplicate found")
+    
+#%% Tokenization
+
+from bs4 import BeautifulSoup
+from nltk import word_tokenize
+
+qs = posts_df['Body']
+
+#remove all the html tags from the text
+soups = [BeautifulSoup(q) for q in qs]
+qs_text = [soup.get_text() for soup in soups]
+
+#tokenize all the questions
+qs_tokens = [word_tokenize(q_text) for q_text in qs_text]
+
+
 
 
 
