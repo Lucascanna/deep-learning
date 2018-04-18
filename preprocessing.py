@@ -4,6 +4,10 @@
 import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
+from bs4 import BeautifulSoup
+from nltk import word_tokenize
+
+#%% READING THE XMLs FILES
 
 #from an xml element containing a post to a dictionary
 def parse_post(elem):
@@ -35,6 +39,8 @@ root_links = ET.parse('PostLinks.xml').getroot()
 dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']")]
 dup_df = pd.DataFrame.from_records(dup_ls)
 
+#%% GENERATION OF NON-DUPLICATED POSTS
+
 # generate a dataframe of random pairs of post indexes
 non_dup_df = pd.DataFrame(np.random.randint(0, posts_df.shape[0], size=(dup_df.shape[0],2)), columns=['Post1', 'Post2'])
 # substitute indexes with PostIds
@@ -49,24 +55,10 @@ if (pd.merge(dup_df, non_dup_df).shape[0]!=0):
 if (pd.merge(dup_df, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Post2':'Post1'})).shape[0]!=0):
     print("Error: duplicate found")
     
-#%% Tokenization
-
-from bs4 import BeautifulSoup
-from nltk import word_tokenize
-
-qs = posts_df['Body']
-
-#remove all the html tags from the text
-soups = [BeautifulSoup(q) for q in qs]
-qs_text = [soup.get_text() for soup in soups]
-
-#tokenize all the questions
-qs_tokens = [word_tokenize(q_text) for q_text in qs_text]
-
-
-
 # add column Duplicate to non_dup_df
 non_dup_df = pd.concat([pd.DataFrame(0, index=range(non_dup_df.shape[0]), columns=['Duplicate']), non_dup_df], axis=1)
+
+#%% SPLITTING OF THE DATASET
 
 # shuffling non_dup_df and dup_df
 non_dup_df = non_dup_df.sample(frac=1).reset_index(drop=True)
@@ -90,4 +82,20 @@ if (pd.merge(validation_df, test_df).shape[0]!=0):
 train_df = train_df.sample(frac=1).reset_index(drop=True)
 validation_df = validation_df.sample(frac=1).reset_index(drop=True)
 test_df = test_df.sample(frac=1).reset_index(drop=True)
+    
+#%% TOKENIZATION OF QUESTIONS
+
+qs = posts_df['Body'][:10]
+
+#remove all the html tags from the text
+soups = [BeautifulSoup(q) for q in qs]
+qs_text = [soup.get_text() for soup in soups]
+
+#tokenize all the questions
+qs_tokens = [word_tokenize(q_text) for q_text in qs_text]
+#posts_df['Body']=qs_tokens
+
+
+
+
 
