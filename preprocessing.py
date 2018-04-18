@@ -16,9 +16,8 @@ def parse_post(elem):
         postId = elem.attrib.get('Id')
         post['Id'] = postId
         body = elem.attrib.get('Body')
-        post['Body'] = body
         title = elem.attrib.get('Title')
-        post['Title'] = title
+        post['Text'] = title + body
         return post
     
 #from an xml element containing link between two duplicated posts to a dictionary
