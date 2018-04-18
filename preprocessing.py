@@ -84,17 +84,17 @@ test_df = test_df.sample(frac=1).reset_index(drop=True)
     
 #%% TOKENIZATION OF QUESTIONS
 
-qs = posts_df['Body'][:10]
+qs = list(posts_df['Text'])
 
-#remove all the html tags from the text
-soups = [BeautifulSoup(q) for q in qs]
-qs_text = [soup.get_text() for soup in soups]
+def question2tokens(q):
+    soup = BeautifulSoup(q, 'html5lib')
+    #remove all the html tags from the text
+    for link in soup.find_all('a'):
+        link.string='thiswordisalink'
+    #remove all the html tags from the text
+    q_text = soup.get_text().lower()
+    return word_tokenize(q_text)
 
 #tokenize all the questions
-qs_tokens = [word_tokenize(q_text) for q_text in qs_text]
-#posts_df['Body']=qs_tokens
-
-
-
-
-
+qs_tokens = [question2tokens(q) for q in qs]
+posts_df['Text']=qs_tokens
