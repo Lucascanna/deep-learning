@@ -4,6 +4,10 @@
 import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
+import collections
+import random
+import math
+import tensorflow as tf
 from bs4 import BeautifulSoup
 from nltk import word_tokenize
 
@@ -89,13 +93,170 @@ qs = list(posts_df['Text'])
 
 def question2tokens(q):
     soup = BeautifulSoup(q, 'html5lib')
-    #remove all the html tags from the text
+    #substitute all the links with a unique string
     for link in soup.find_all('a'):
         link.string='thiswordisalink'
-    #remove all the html tags from the text
+    #remove all the html tags from the text and make all the words lowercase
     q_text = soup.get_text().lower()
     return word_tokenize(q_text)
 
 #tokenize all the questions
 qs_tokens = [question2tokens(q) for q in qs]
 posts_df['Text']=qs_tokens
+
+#%% WORD EMBEDDINGS: define two helping functions and build the dataset
+
+#DUBBIO: nel creare i word embeddings dobbiamo usare NCE (metodo più veloce, ultima parte tutorial) o con GPU si può runnare quello del tutorial?
+
+def build_dataset(posts):
+    
+    flat_posts = [word for post in posts for word in post]
+    #create a list of tuples (word, count) sorted by count
+    count = collections.Counter(flat_posts).most_common()
+    
+    #give a unique index to each word using a dictionary
+    dictionary = dict()
+    for word, _ in count:
+        dictionary[word]=len(dictionary)
+    #reverse the dictionary
+    reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
+    
+    #create a list, where, for each word in the corpus there is the corresponding index
+    data = list()
+    for word in flat_posts:
+        index = dictionary[word]
+        data.append(index)
+    
+    return data, count, dictionary, reversed_dictionary
+
+data_index = 0
+# generate batch data
+def generate_batch(data, batch_size, num_skips, skip_window):
+    global data_index
+    assert batch_size % num_skips == 0
+    assert num_skips <= 2 * skip_window
+    
+    batch = np.ndarray(shape=(batch_size), dtype=np.int32)
+    context = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
+    span = 2 * skip_window + 1  # [ skip_window input_word skip_window ]
+    
+    #initilize the buffer with the first span words
+    buffer = collections.deque(maxlen=span)
+    for _ in range(span):
+        buffer.append(data[data_index])
+        data_index = (data_index + 1) % len(data)
+        
+    #fill batch and context
+    for i in range(batch_size // num_skips):
+        target = skip_window  # input word at the center of the buffer
+        targets_to_avoid = [skip_window]
+        for j in range(num_skips):
+            while target in targets_to_avoid:
+                target = random.randint(0, span - 1)
+            targets_to_avoid.append(target)
+            batch[i * num_skips + j] = buffer[skip_window]  # this is the input word
+            context[i * num_skips + j, 0] = buffer[target]  # these are the context words
+        buffer.append(data[data_index])
+        data_index = (data_index + 1) % len(data)
+    
+    # Backtrack a little bit to avoid skipping words in the end of a batch
+    data_index = (data_index + len(data) - span) % len(data)
+    
+    return batch, context
+
+
+#BUILD THE DATASET
+# data: list of the indeces of the words in the text
+# dictionary: key=word, value=index
+# reversed_dictionary: key=index, value=word
+# count: list of tuples of type (word, num_of_occurences_in_the_text)
+data, count, dictionary, reversed_dictionary = build_dataset(posts_df['Text'])
+vocabulary_size = len(dictionary)
+
+#%% WORD EMBEDDINGS: build the skip-gram model with tensorflow
+
+# set the values of hyperparameters of the model
+batch_size = 128
+skip_window = 1
+num_skip = 2
+embedding_size = 128
+num_sampled = 64
+
+#input layer (note that we don't explicitly need the one-hot style matrix, but only a vector with the indexes of the words)
+train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
+#output layer
+train_context = tf.placeholder(tf.int32, shape=[batch_size, 1])
+
+#weights between input layer and hidden layer (this will be the matrix of embeddings)
+embeddings = tf.Variable(tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
+#associate each embedding vector with the corresponding word in the input (this is essentially the output of the hidden layer)
+embed = tf.nn.embedding_lookup(embeddings, train_inputs)
+
+#weights and biases between hidden and output layer
+weights = tf.Variable(tf.truncated_normal([vocabulary_size, embedding_size], stddev=1.0/math.sqrt(embedding_size)))
+biases = tf.Variable(tf.zeros([vocabulary_size]))
+
+#define the loss function and the correspondent optimizer
+nce_loss = tf.reduce_mean(tf.nn.nce_loss(weights = weights, biases = biases, labels = train_context,inputs = embed, num_sampled = num_sampled, num_classes = vocabulary_size))
+optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(nce_loss)
+
+#VALIDATION OF THE MODEL
+#build the validation-set made of the 16 words among the top 100 frequent words
+validation_size = 16
+validation_window = 200
+validation_set = np.random.choice(validation_window, validation_size, replace=False)
+
+#constant to hold the validation set in the tensorflow model
+validation_const = tf.constant(validation_set, dtype=tf.int32)
+
+#compute the L2 norm of each embedding
+norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), axis=1, keepdims=True))
+#normalize each embedding vector with its L2 norm
+normalized_embeddings = embeddings / norm
+
+#take the embeddings of our validation set
+validation_embeddings = tf.nn.embedding_lookup(normalized_embeddings, validation_const)
+
+#compute the similarity between each word in the validation-set and each word in the vocabulary
+similarity = tf.matmul(validation_embeddings, normalized_embeddings, transpose_b=True)
+
+#%% WORD EMBEDDINGS: perform the training
+
+init = tf.global_variables_initializer()
+num_steps = 100001
+
+with tf.Session() as sess:
+    init.run()
+    
+    avg_loss=0
+    for step in range(num_steps):
+        #generate a batch from the dataset
+        batch_inputs, batch_context = generate_batch(data, batch_size, num_skip, skip_window)
+        
+        #perform the training and update the avg_loss
+        _, loss_val = sess.run([optimizer, nce_loss], feed_dict={train_inputs: batch_inputs, train_context: batch_context})
+        avg_loss += loss_val
+        
+        #print average loss every 200 steps
+        if step % 2000 == 0:
+            if step > 0:
+                avg_loss /= 2000
+            # The average loss is an estimate of the loss over the last 2000 batches.
+            print('Average loss at step ', step, ': ', avg_loss)
+            avg_loss = 0
+        
+        # Every 10000 steps print the top-8 similar words to those in the validation set
+        if step % 10000 == 0:
+            sim = similarity.eval()
+            for i in range(validation_size):
+                validation_word = reversed_dictionary[validation_set[i]]
+                top_k = 8  # number of nearest neighbors
+                nearest = (-sim[i, :]).argsort()[1:top_k + 1]
+                log_str = 'Nearest to %s:' % validation_word
+                for k in range(top_k):
+                    close_word = reversed_dictionary[nearest[k]]
+                    log_str = '%s %s,' % (log_str, close_word)
+                print(log_str)
+    
+    #get the final result!
+    final_embeddings = normalized_embeddings.eval()
