@@ -85,10 +85,13 @@ if (pd.merge(validation_df, test_df).shape[0]!=0):
 train_df = train_df.sample(frac=1).reset_index(drop=True)
 validation_df = validation_df.sample(frac=1).reset_index(drop=True)
 test_df = test_df.sample(frac=1).reset_index(drop=True)
-    
-#%% TOKENIZATION OF QUESTIONS
 
-qs = list(posts_df['Text'])
+#clean workspace
+del dup_ls
+del posts_ls
+del train_index
+del validation_index 
+#%% TOKENIZATION OF QUESTIONS
 
 def question2tokens(q):
     soup = BeautifulSoup(q, 'html5lib')
@@ -100,8 +103,10 @@ def question2tokens(q):
     return word_tokenize(q_text)
 
 #tokenize all the questions
-qs_tokens = [question2tokens(q) for q in qs]
-posts_df['Text']=qs_tokens
+qs_tokens = [question2tokens(q) for q in list(posts_df['Text'])]
+posts_df['Tokens']=qs_tokens
+
+del qs_tokens
 
 #%% WORD EMBEDDINGS: define two helping functions and build the dataset
 
