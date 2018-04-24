@@ -94,7 +94,9 @@ def question2tokens(q):
     soup = BeautifulSoup(q, 'html5lib')
     #substitute all the links with a unique string
     for link in soup.find_all('a'):
-        link.string='thiswordisalink'
+        link.string='thistokenisalink'
+    for code in soup.find_all('code'):
+        link.string='thistokeniscode'
     #remove all the html tags from the text and make all the words lowercase
     q_text = soup.get_text().lower()
     return word_tokenize(q_text)
@@ -209,7 +211,7 @@ validation_set = np.random.choice(validation_window, validation_size, replace=Fa
 validation_const = tf.constant(validation_set, dtype=tf.int32)
 
 #compute the L2 norm of each embedding
-norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), axis=1, keepdims=True))
+norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), axis=1, keep_dims=True))
 #normalize each embedding vector with its L2 norm
 normalized_embeddings = embeddings / norm
 
@@ -259,3 +261,34 @@ with tf.Session() as sess:
     
     #get the final result!
     final_embeddings = normalized_embeddings.eval()
+
+#%% WORD EMBEDDINGS: Plot results
+    
+def plot_with_labels(low_dim_embs, labels, filename='tsne.png'):
+  assert low_dim_embs.shape[0] >= len(labels), 'More labels than embeddings'
+  plt.figure(figsize=(18, 18))  # in inches
+  for i, label in enumerate(labels):
+    x, y = low_dim_embs[i, :]
+    plt.scatter(x, y)
+    plt.annotate(label,
+                 xy=(x, y),
+                 xytext=(5, 2),
+                 textcoords='offset points',
+                 ha='right',
+                 va='bottom')
+
+  plt.savefig(filename)
+
+try:
+  # pylint: disable=g-import-not-at-top
+  from sklearn.manifold import TSNE
+  import matplotlib.pyplot as plt
+
+  tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=5000)
+  plot_only = 500
+  low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
+  labels = [reversed_dictionary[i] for i in range(plot_only)]
+  plot_with_labels(low_dim_embs, labels)
+
+except ImportError:
+  print('Please install sklearn, matplotlib, and scipy to show embeddings.')
