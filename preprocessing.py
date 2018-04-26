@@ -99,7 +99,7 @@ def question2tokens(q):
     for link in soup.find_all('a'):
         link.string='thistokenisalink'
     for code in soup.find_all('code'):
-        link.string='thistokeniscode'
+        code.string='thistokeniscode'
     #remove all the html tags from the text and make all the words lowercase
     q_text = soup.get_text().lower()
     return word_tokenize(q_text)
@@ -111,8 +111,6 @@ posts_df['Tokens']=qs_tokens
 del qs_tokens
 
 #%% WORD EMBEDDINGS: define two helping functions and build the dataset
-
-#DUBBIO: nel creare i word embeddings dobbiamo usare NCE (metodo più veloce, ultima parte tutorial) o con GPU si può runnare quello del tutorial?
 
 def build_dataset(posts):
     
@@ -265,7 +263,7 @@ with tf.Session() as sess:
                 print(log_str)
     
     #get the final result!
-    final_embeddings = normalized_embeddings.eval()
+    ubuntu_embeddings = normalized_embeddings.eval()
 
 #%% WORD EMBEDDINGS: Plot results
     
@@ -291,9 +289,32 @@ try:
 
   tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=5000)
   plot_only = 500
-  low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
+  low_dim_embs = tsne.fit_transform(ubuntu_embeddings[:plot_only, :])
   labels = [reversed_dictionary[i] for i in range(plot_only)]
   plot_with_labels(low_dim_embs, labels)
 
 except ImportError:
   print('Please install sklearn, matplotlib, and scipy to show embeddings.')
+  
+#%% NETWORK ARCHITECTURE
+
+q_length = 30 #TODO: padding
+
+#input layer: [batch_size x num_questions x q_length]
+x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
+
+#weigths between input and first hidden layer
+W0 = tf.Variable(initial_value=ubuntu_embeddings)
+
+#output first layer: [batch_size x num_question x q_length x embedding_size]
+q_emb = tf.nn.embedding_lookup(W0, x)
+
+#hyperparameters
+window_size=3
+clu=10
+
+#convolutional layer: [batch_size x num_quesitons x q_length-window_size x clu]
+conv = tf.layers.conv2d(q_emb, clu, window_size, activation=tf.tanh, data_format='channel_first')
+
+
+
