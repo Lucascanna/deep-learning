@@ -298,23 +298,38 @@ except ImportError:
   
 #%% NETWORK ARCHITECTURE
 
-q_length = 30 #TODO: padding
+q_length = 30 #TODO: all questions samo length
 
-#input layer: [batch_size x num_questions x q_length]
+#input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
+y = tf.placeholder(tf.int32, shape=[None])
 
 #weigths between input and first hidden layer
 W0 = tf.Variable(initial_value=ubuntu_embeddings)
 
-#output first layer: [batch_size x num_question x q_length x embedding_size]
+#output first layer: [batch_size x 2 x q_length x embedding_size]
 q_emb = tf.nn.embedding_lookup(W0, x)
 
 #hyperparameters
 window_size=3
 clu=10
 
-#convolutional layer: [batch_size x num_quesitons x q_length-window_size x clu]
-conv = tf.layers.conv2d(q_emb, clu, window_size, activation=tf.tanh, data_format='channel_first')
+#convolutional layer: [batch_size x 2 x q_length-window_size x clu]    TODO: padding
+conv_layer = tf.layers.conv2d(inputs=q_emb, filters=clu, kernel_size=[window_size, embedding_size], activation=tf.tanh, data_format='channel_first')
 
+#returns the question-wide vector representation [batch_size x 2 x clu].
+sum_layer = tf.nn.tanh(tf.reduce_sum(conv_layer, axis=2))
 
+#SIMILARITY SCORE
+#normalization: question-wide vectors are normalized, i.e. each element is divided by the L2-norm of the vector
+l2_norm = tf.sqrt(tf.reduce_sum(tf.square(sum_layer), axis=2, keep_dims=True))
+normalization_layer = sum_layer / l2_norm
+#computing the similarity score between vector representation of q1 and q2: [batch_size]
+r_q1, r_q2 = tf.split(normalization_layer, 2, 1)
+score_layer = tf.tensordot(r_q1, r_q2, axes=[[1][1]])
 
+#loss function: mean squared error
+loss=tf.losses.mean_squared_error(y, score_layer)
+
+#minimize the loss using gradient descent
+optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
