@@ -10,7 +10,6 @@ import math
 import tensorflow as tf
 from bs4 import BeautifulSoup
 from nltk import word_tokenize
-from datetime import date
 
 #%% READING THE XMLs FILES
 
@@ -23,8 +22,6 @@ def parse_post(elem):
         body = elem.attrib.get('Body')
         title = elem.attrib.get('Title')
         post['Text'] = title + body
-        year, month, _ = elem.attrib.get('CreationDate').split('-')
-        post['Date'] = date(int(year), int(month), 1)
         return post
     
 #from an xml element containing link between two duplicated posts to a dictionary
@@ -38,13 +35,18 @@ def parse_link(elem):
 # parsing Posts.xml into a pandas dataframe
 root_posts = ET.parse('Posts.xml').getroot()
 # filter out posts that are not questions
-posts_ls = [ parse_post(elem) for elem in root_posts.findall("./row[@PostTypeId='1']") if parse_post(elem)['Date'] < date(2014, 4, 1)]
+posts_ls = [ parse_post(elem) for elem in root_posts.findall("./row[@PostTypeId='1']")]
 posts_df = pd.DataFrame.from_records(posts_ls)
+
 
 # parsing PostLinks.xml into a pandas dataframe
 root_links = ET.parse('PostLinks.xml').getroot()
-dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']") if ((parse_link(elem)['Post1'] in posts_df['Id']) and (parse_link(elem)['Post2'] in posts_df['Id']))]
+dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']") ]
 dup_df = pd.DataFrame.from_records(dup_ls)
+#reduce dimensionality od duplicate dataframe
+dup_indeces = np.random.choice(range(0, stop=dup_df.shape[0]), size=15500, replace=False)
+dup_df = dup_df.iloc[dup_indeces]
+
 
 #%% GENERATION OF NON-DUPLICATED POSTS
 
@@ -64,6 +66,7 @@ if (pd.merge(dup_df, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Pos
     
 # add column Duplicate to non_dup_df
 non_dup_df = pd.concat([pd.DataFrame(0, index=range(non_dup_df.shape[0]), columns=['Duplicate']), non_dup_df], axis=1)
+
 
 #%% SPLITTING OF THE DATASET
 
