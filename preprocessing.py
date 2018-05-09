@@ -10,6 +10,7 @@ import math
 import tensorflow as tf
 from bs4 import BeautifulSoup
 from nltk import word_tokenize
+from datetime import date
 
 #%% READING THE XMLs FILES
 
@@ -22,6 +23,8 @@ def parse_post(elem):
         body = elem.attrib.get('Body')
         title = elem.attrib.get('Title')
         post['Text'] = title + body
+        year, month, _ = elem.attrib.get('CreationDate').split('-')
+        post['Date'] = date(int(year), int(month), 1)
         return post
     
 #from an xml element containing link between two duplicated posts to a dictionary
@@ -34,12 +37,13 @@ def parse_link(elem):
     
 # parsing Posts.xml into a pandas dataframe
 root_posts = ET.parse('Posts.xml').getroot()
-posts_ls = [ parse_post(elem) for elem in root_posts.findall("./row[@PostTypeId='1']")]
+# filter out posts that are not questions
+posts_ls = [ parse_post(elem) for elem in root_posts.findall("./row[@PostTypeId='1']") if parse_post(elem)['Date'] < date(2014, 4, 1)]
 posts_df = pd.DataFrame.from_records(posts_ls)
 
 # parsing PostLinks.xml into a pandas dataframe
 root_links = ET.parse('PostLinks.xml').getroot()
-dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']")]
+dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']") if ((parse_link(elem)['Post1'] in posts_df['Id']) and (parse_link(elem)['Post2'] in posts_df['Id']))]
 dup_df = pd.DataFrame.from_records(dup_ls)
 
 #%% GENERATION OF NON-DUPLICATED POSTS
@@ -300,7 +304,7 @@ except ImportError:
 
 q_length = 5 #TODO: all questions same length
 vocabulary_size=100
-embedding_size=10
+embedding_size=7
 
 #input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
@@ -317,7 +321,7 @@ window_size = 3
 clu = 10
 
 #convolutional layer: [batch_size x 2 x q_length-window_size x clu]
-conv_layer = tf.layers.conv2d(inputs=q_emb, filters=clu, kernel_size=[window_size, embedding_size], activation=tf.tanh, data_format='channels_first')
+conv_layer = tf.layers.conv2d(inputs=q_emb, filters=clu, kernel_size=[window_size, embedding_size], activation=tf.tanh, padding='same')
 
 #returns the question-wide vector representation [batch_size x 2 x clu].
 sum_layer = tf.nn.tanh(tf.reduce_sum(conv_layer, axis=2))
@@ -327,8 +331,10 @@ sum_layer = tf.nn.tanh(tf.reduce_sum(conv_layer, axis=2))
 l2_norm = tf.sqrt(tf.reduce_sum(tf.square(sum_layer), axis=-1, keep_dims=True))
 normalization_layer = sum_layer / l2_norm
 #computing the similarity score between vector representation of q1 and q2: [batch_size]
-#r_q1, r_q2 = tf.split(normalization_layer, 2, 1)
-#score_layer = tf.tensordot(r_q1, r_q2, axes=[[1][1]])
+r_q1, r_q2 = tf.split(normalization_layer, 2, 1)
+r_q1 = tf.squeeze(r_q1, axis=1)
+r_q2 = tf.squeeze(r_q2, axis=1)
+score_layer = tf.tensordot(r_q1, tf.transpose(r_q2), axes=1)
 
 #loss function: mean squared error
 #loss=tf.losses.mean_squared_error(y, score_layer)
@@ -340,5 +346,5 @@ init_op = tf.global_variables_initializer()
 x_prova = np.random.randint(0, vocabulary_size, [1, 2, 5])
 with tf.Session() as sess:
     sess.run(init_op)
-    score = sess.run(normalization_layer, feed_dict={x: x_prova})
-    print(score)
+    score = sess.run(score_layer, feed_dict={x: x_prova})
+    print(score.shape)
