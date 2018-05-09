@@ -44,7 +44,7 @@ root_links = ET.parse('PostLinks.xml').getroot()
 dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']") ]
 dup_df = pd.DataFrame.from_records(dup_ls)
 #reduce dimensionality od duplicate dataframe
-dup_indeces = np.random.choice(range(0, stop=dup_df.shape[0]), size=15500, replace=False)
+dup_indeces = np.random.choice(range(0, dup_df.shape[0]), size=15500, replace=False)
 dup_df = dup_df.iloc[dup_indeces]
 
 
@@ -67,7 +67,9 @@ if (pd.merge(dup_df, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Pos
 # add column Duplicate to non_dup_df
 non_dup_df = pd.concat([pd.DataFrame(0, index=range(non_dup_df.shape[0]), columns=['Duplicate']), non_dup_df], axis=1)
 
-
+#clean workspace
+del dup_ls
+del posts_ls
 #%% SPLITTING OF THE DATASET
 
 # shuffling non_dup_df and dup_df
@@ -75,8 +77,8 @@ non_dup_df = non_dup_df.sample(frac=1).reset_index(drop=True)
 dup_df = dup_df.sample(frac=1).reset_index(drop=True)
 
 # split dataset into train validation and test set
-train_index = int(non_dup_df.shape[0] * 0.8)
-validation_index = int(non_dup_df.shape[0] * 0.15) + train_index
+train_index = 12000
+validation_index = 500 + train_index
 
 train_df = pd.concat([non_dup_df[0:train_index], dup_df[0:train_index]], ignore_index=True)
 validation_df = pd.concat([non_dup_df[train_index:validation_index], dup_df[train_index:validation_index]], ignore_index=True)
@@ -94,10 +96,11 @@ validation_df = validation_df.sample(frac=1).reset_index(drop=True)
 test_df = test_df.sample(frac=1).reset_index(drop=True)
 
 #clean workspace
-del dup_ls
-del posts_ls
 del train_index
-del validation_index 
+del validation_index
+del dup_indeces
+
+
 #%% TOKENIZATION OF QUESTIONS
 
 def question2tokens(q):
@@ -116,6 +119,13 @@ qs_tokens = [question2tokens(q) for q in list(posts_df['Text'])]
 posts_df['Tokens']=qs_tokens
 
 del qs_tokens
+
+#%% SAVE DATAFRAMES AS CSV FILES
+
+posts_df.to_csv("./posts_df.csv")
+test_df.to_csv("./tests_df.csv")
+train_df.to_csv("./train_df.csv")
+validation_df.to_csv("./validation_df.csv")
 
 #%% WORD EMBEDDINGS: define two helping functions and build the dataset
 
