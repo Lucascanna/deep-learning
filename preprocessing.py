@@ -185,6 +185,7 @@ def emb_generate_batch(data, batch_size, num_skips, skip_window):
     
     return batch, context
 
+posts_df = pd.read_csv("posts_df.csv")
 
 #BUILD THE DATASET
 # data: list of the indeces of the words in the text
