@@ -10,6 +10,7 @@ import math
 import tensorflow as tf
 from bs4 import BeautifulSoup
 from nltk import word_tokenize
+import re
 
 #%% READING THE XMLs FILES
 
@@ -112,6 +113,20 @@ def question2tokens(q):
         code.string='thistokeniscode'
     #remove all the html tags from the text and make all the words lowercase
     q_text = soup.get_text().lower()
+    #define regular expressions for specific text
+    time=re.compile(r'([0-1]?\d|2[0-3])(?::([0-5]?\d))+')
+    date=re.compile(r'\d\d(\d\d)?(-|/)\d\d(-|/)\d\d(\d\d)?')
+    version=re.compile(r'\d+\.\d+(.\d+)*')
+    path=re.compile(r'~?(/\S*)+')
+    hexadecimal=re.compile(r'0?x[0-9a-fA-F]+')
+    nochar=re.compile(r'\W+')
+    #mark the specific text found
+    q_text=re.sub(time,  'thistokenistime', q_text)
+    q_text=re.sub(date,  'thistokenisadate', q_text)
+    q_text=re.sub(version,  'thistokenisaversion', q_text)
+    q_text=re.sub(path,  'thistokenisapath', q_text)
+    q_text=re.sub(hexadecimal,  'thistokenishexadecimal', q_text)
+    q_text=re.sub(nochar,  ' ', q_text)
     return word_tokenize(q_text)
 
 #tokenize all the questions
