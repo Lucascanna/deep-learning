@@ -181,7 +181,7 @@ def emb_generate_batch(data, batch_size, num_skips, skip_window):
 # dictionary: key=word, value=index
 # reversed_dictionary: key=index, value=word
 # count: list of tuples of type (word, num_of_occurences_in_the_text)
-data, count, dictionary, reversed_dictionary = emb_build_dataset(posts_df['Text'])
+data, count, dictionary, reversed_dictionary = emb_build_dataset(posts_df['Tokens'])
 vocabulary_size = len(dictionary)
 
 #%% WORD EMBEDDINGS: build the skip-gram model with tensorflow
@@ -195,7 +195,7 @@ num_sampled = 64
 
 #input layer (note that we don't explicitly need the one-hot style matrix, but only a vector with the indexes of the words)
 train_inputs = tf.placeholder(tf.int32, shape=[emb_batch_size])
-#output layer
+#output layer (note that we predict )
 train_context = tf.placeholder(tf.int32, shape=[emb_batch_size, 1])
 
 #weights between input layer and hidden layer (this will be the matrix of embeddings)
@@ -212,7 +212,7 @@ nce_loss = tf.reduce_mean(tf.nn.nce_loss(weights = weights, biases = biases, lab
 optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(nce_loss)
 
 #VALIDATION OF THE MODEL
-#build the validation-set made of the 16 words among the top 100 frequent words
+#build the validation-set made of the 16 words among the top 200 frequent words
 validation_size = 16
 validation_window = 200
 validation_set = np.random.choice(validation_window, validation_size, replace=False)
@@ -311,10 +311,10 @@ embedding_size=7
 
 #input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
-#y = tf.placeholder(tf.int32, shape=[None])
+y = tf.placeholder(tf.int32, shape=[None])
 
 #weigths between input and first hidden layer
-W0 = tf.Variable(np.ones(shape=[vocabulary_size, embedding_size], dtype=np.float32))
+W0 = tf.Variable(ubuntu_embeddings)
 
 #output first layer: [batch_size x 2 x q_length x embedding_size]
 q_emb = tf.nn.embedding_lookup(W0, x)
@@ -323,7 +323,7 @@ q_emb = tf.nn.embedding_lookup(W0, x)
 window_size = 3
 clu = 10
 
-#convolutional layer: [batch_size x 2 x q_length-window_size x clu]
+#convolutional layer: [batch_size x 2 x q_length x clu]
 conv_layer = tf.layers.conv2d(inputs=q_emb, filters=clu, kernel_size=[window_size, embedding_size], activation=tf.tanh, padding='same')
 
 #returns the question-wide vector representation [batch_size x 2 x clu].
@@ -340,14 +340,9 @@ r_q2 = tf.squeeze(r_q2, axis=1)
 score_layer = tf.tensordot(r_q1, tf.transpose(r_q2), axes=1)
 
 #loss function: mean squared error
-#loss=tf.losses.mean_squared_error(y, score_layer)
+loss=tf.losses.mean_squared_error(y, score_layer)
 
 #minimize the loss using gradient descent
-#optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
 
-init_op = tf.global_variables_initializer()
-x_prova = np.random.randint(0, vocabulary_size, [1, 2, 5])
-with tf.Session() as sess:
-    sess.run(init_op)
-    score = sess.run(score_layer, feed_dict={x: x_prova})
-    print(score.shape)
+
