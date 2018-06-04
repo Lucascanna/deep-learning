@@ -353,7 +353,8 @@ except ImportError:
 #%% NETWORK ARCHITECTURE
 
 q_length = 0 #TODO: all questions same length
-max(posts_df['Tokens'][post_df['Id'].apply(lambda x: len(x))) ##[posts_df['Id'][train_df['Post1']]]
+posts_df.set_index('Id', inplace=True)
+q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2'].tolist()].apply(lambda x : len(x)).max()
 vocabulary_size=100
 embedding_size=7
 
