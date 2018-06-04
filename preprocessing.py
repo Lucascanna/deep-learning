@@ -38,23 +38,41 @@ root_posts = ET.parse('Posts.xml').getroot()
 # filter out posts that are not questions
 posts_ls = [ parse_post(elem) for elem in root_posts.findall("./row[@PostTypeId='1']")]
 posts_df = pd.DataFrame.from_records(posts_ls)
-
+posts_df.set_index('Id', inplace=True)
 
 # parsing PostLinks.xml into a pandas dataframe
 root_links = ET.parse('PostLinks.xml').getroot()
 dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']") ]
 dup_df = pd.DataFrame.from_records(dup_ls)
+
+#check links with Posts that are questions
+cond1 = pd.isnull(posts_df.loc[dup_df['Post1'].values]['Text'].values)
+cond2 = pd.isnull(posts_df.loc[dup_df['Post2'].values]['Text'].values)
+cond = np.logical_not(cond1) & np.logical_not(cond2)
+dup_df = dup_df[cond]
+
 #reduce dimensionality od duplicate dataframe
 dup_indeces = np.random.choice(range(0, dup_df.shape[0]), size=15500, replace=False)
 dup_df = dup_df.iloc[dup_indeces]
 
+del cond
+del cond1
+del cond2
 
 #%% GENERATION OF NON-DUPLICATED POSTS
 
+posts_df.reset_index(inplace=True)
 # generate a dataframe of random pairs of post indexes
 non_dup_df = pd.DataFrame(np.random.randint(0, posts_df.shape[0], size=(dup_df.shape[0],2)), columns=['Post1', 'Post2'])
 # substitute indexes with PostIds
-non_dup_df = non_dup_df.apply(lambda x : [posts_df.loc[x['Post1'], 'Id'], posts_df.loc[x['Post2'], 'Id']], axis=1)
+def map_postId(args):
+    x1 = posts_df.loc[args[0], 'Id']
+    x2 = posts_df.loc[args[1], 'Id']
+    
+    return pd.Series([x1, x2])
+
+non_dup_df = non_dup_df.apply(map_postId, axis=1)
+non_dup_df.columns = ['Post1', 'Post2']
 
 # check that there are no pairs with the same postId
 non_dup_df = non_dup_df.apply(lambda x : x if x['Post1'] != x['Post2'] else print("Error: same pair founded", x), axis=1)
