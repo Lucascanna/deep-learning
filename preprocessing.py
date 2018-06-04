@@ -172,6 +172,7 @@ def emb_build_dataset(posts):
     
     #give a unique index to each word using a dictionary
     dictionary = dict()
+    dictionary['Thiswordisunkown']=0
     for word, _ in count:
         dictionary[word]=len(dictionary)
     #reverse the dictionary
@@ -352,15 +353,16 @@ except ImportError:
   
 #%% NETWORK ARCHITECTURE
 
-q_length = 0 #TODO: all questions same length
 posts_df.set_index('Id', inplace=True)
 q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2'].tolist()].apply(lambda x : len(x)).max()
 vocabulary_size=100
 embedding_size=7
+batch_size = 100
+epochs = 10000
 
 #input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
-y = tf.placeholder(tf.int32, shape=[None])
+y = tf.placeholder(tf.int32, shape=[None,1])
 
 #weigths between input and first hidden layer
 W0 = tf.Variable(ubuntu_embeddings)
@@ -387,11 +389,62 @@ r_q1, r_q2 = tf.split(normalization_layer, 2, 1)
 r_q1 = tf.squeeze(r_q1, axis=1)
 r_q2 = tf.squeeze(r_q2, axis=1)
 score_layer = tf.tensordot(r_q1, tf.transpose(r_q2), axes=1)
+score_layer_exp = tf.expand_dims(score_layer, 1)
+
+#computing prediction and accuracy
+treshold = tf.constant(np.ones(shape=(batch_size,1))/2, dtype=tf.float32)
+prediction = tf.greater_equal(score_layer_exp, treshold)
+correct_prediction = tf.equal(prediction, y)
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
 
 #loss function: mean squared error
-loss=tf.losses.mean_squared_error(y, score_layer)
+loss=tf.losses.mean_squared_error(y, score_layer_exp)
 
 #minimize the loss using gradient descent
 optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+
+#%% TRAINING
+
+def words_to_indexes(post, dictionary):
+    return [dictionary[word] for word in post]
+
+batch_index = 0
+def generate_batch(train_df, posts_df, dictionary, batch_size):
+    global batch_index
+    assert train_df.shape[0] % batch_size == 0
+    batch = train_df.iloc[batch_index : batch_index+batch_size]
+    batch = batch.apply(lambda x: pd.Series([x['Duplicate'],
+                                            words_to_indexes([posts_df['Tokens'].loc[x['Post1']].tolist(), dictionary]),
+                                            words_to_indexes([posts_df['Tokens'].loc[x['Post2']].tolist(), dictionary])]))
+    batch.columns = ['Duplicate', 'Post1', 'Post2']
+    batch_input = batch.as_matrix(columns=['Post1', 'Post2'])
+    batch_output = batch.as_matrix(columns=['Duplicate'])
+    
+    batch_index = (batch_index+batch_size) % train_df.shape[0]
+    
+    return batch_input, batch_output
+
+init_op = tf.global_variables_initializer()
+
+with tf.Session() as sess:
+    #initialize the variables
+    sess.run(init_op)
+    
+    n_batches = train_df.shape[0] / batch_size
+    #loop through the epochs
+    for epoch in range(epochs):
+        avg_cost=0
+        #loop through the batches
+        for j in range(n_batches):
+            x_batch, y_batch = generate_batch(train_df, posts_df, dictionary, batch_size)
+            params, c = sess.run([optimizer, loss], feed_dict = {x: x_batch, y: y_batch})
+            avg_cost += c / n_batches
+        print("Epoch: ", epoch+1, "Loss: ", avg_cost)
+    x_test, y_test = generate_batch(test_df, posts_df, dictionary, test_df.size[0])
+    acc = sess.run(accuracy, feed_dict={x: x_test, y:y_test})
+    print('Training terminated! \n Accuracy on test set: ', acc)
+
+
+    
 
 
