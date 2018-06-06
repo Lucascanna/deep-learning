@@ -135,8 +135,8 @@ def question2tokens(q):
     time=re.compile(r'([0-1]?\d|2[0-3])(?::([0-5]?\d))+')
     date=re.compile(r'\d\d(\d\d)?(-|/)\d\d(-|/)\d\d(\d\d)?')
     version=re.compile(r'(\d+\.\d+(.\d+)*)|(\S*\d+\S*)+')
-    path=re.compile(r'\b(~|\w*|.)?(/\S*)+\b')
-    hexadecimal=re.compile(r'\b0?x[0-9a-fA-F]+\b')
+    path=re.compile(r'(~|\w*|.)?(/\S*)+')
+    hexadecimal=re.compile(r'0x[0-9a-fA-F]+')
     variable=re.compile(r'([a-zA-Z0-9]*_+[a-zA-Z0-9]*)+')
     nochar=re.compile(r'[^a-zA-Z0-9]+')
     #mark the specific text found
@@ -222,7 +222,7 @@ def emb_generate_batch(data, batch_size, num_skips, skip_window):
     return batch, context
 
 #posts_df = pd.read_csv("posts_df.csv")
-posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")})
+#posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")})
 
 #BUILD THE DATASET
 # data: list of the indeces of the words in the text
@@ -282,7 +282,7 @@ similarity = tf.matmul(validation_embeddings, normalized_embeddings, transpose_b
 #%% WORD EMBEDDINGS: perform the training
 
 init = tf.global_variables_initializer()
-num_steps = 100001
+num_steps = 10
 
 with tf.Session() as sess:
     init.run()
@@ -353,12 +353,12 @@ except ImportError:
   
 #%% NETWORK ARCHITECTURE
 
-posts_df.set_index('Id', inplace=True)
+#posts_df.set_index('Id', inplace=True)
 q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2'].tolist()].apply(lambda x : len(x)).max()
 vocabulary_size=100
 embedding_size=7
 batch_size = 100
-epochs = 10000
+epochs = 10
 
 #input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
@@ -393,12 +393,13 @@ score_layer_exp = tf.expand_dims(score_layer, 1)
 
 #computing prediction and accuracy
 treshold = tf.constant(np.ones(shape=(batch_size,1))/2, dtype=tf.float32)
-prediction = tf.greater_equal(score_layer_exp, treshold)
+prediction = tf.cast(tf.greater_equal(score_layer, treshold), tf.int32)
+
 correct_prediction = tf.equal(prediction, y)
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
 
 #loss function: mean squared error
-loss=tf.losses.mean_squared_error(y, score_layer_exp)
+loss=tf.losses.mean_squared_error(y, score_layer)
 
 #minimize the loss using gradient descent
 optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
@@ -414,8 +415,8 @@ def generate_batch(train_df, posts_df, dictionary, batch_size):
     assert train_df.shape[0] % batch_size == 0
     batch = train_df.iloc[batch_index : batch_index+batch_size]
     batch = batch.apply(lambda x: pd.Series([x['Duplicate'],
-                                            words_to_indexes([posts_df['Tokens'].loc[x['Post1']].tolist(), dictionary]),
-                                            words_to_indexes([posts_df['Tokens'].loc[x['Post2']].tolist(), dictionary])]))
+                                            words_to_indexes(posts_df['Tokens'].loc[x['Post1']], dictionary),
+                                            words_to_indexes(posts_df['Tokens'].loc[x['Post2']], dictionary)]), axis=1)
     batch.columns = ['Duplicate', 'Post1', 'Post2']
     batch_input = batch.as_matrix(columns=['Post1', 'Post2'])
     batch_output = batch.as_matrix(columns=['Duplicate'])
@@ -430,7 +431,7 @@ with tf.Session() as sess:
     #initialize the variables
     sess.run(init_op)
     
-    n_batches = train_df.shape[0] / batch_size
+    n_batches = train_df.shape[0] // batch_size
     #loop through the epochs
     for epoch in range(epochs):
         avg_cost=0
