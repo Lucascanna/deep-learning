@@ -38,13 +38,15 @@ root_posts = ET.parse('Posts.xml').getroot()
 # filter out posts that are not questions
 posts_ls = [ parse_post(elem) for elem in root_posts.findall("./row[@PostTypeId='1']")]
 posts_df = pd.DataFrame.from_records(posts_ls)
-posts_df.set_index('Id', inplace=True)
 
 # parsing PostLinks.xml into a pandas dataframe
 root_links = ET.parse('PostLinks.xml').getroot()
 dup_ls = [ parse_link(elem) for elem in root_links.findall("./row[@LinkTypeId='3']") ]
 dup_df = pd.DataFrame.from_records(dup_ls)
 
+
+#%%
+posts_df.set_index('Id', inplace=True)
 #check links with Posts that are questions
 cond1 = pd.isnull(posts_df.loc[dup_df['Post1'].values]['Text'].values)
 cond2 = pd.isnull(posts_df.loc[dup_df['Post2'].values]['Text'].values)
@@ -87,8 +89,8 @@ if (pd.merge(dup_df, non_dup_df.rename(index=str, columns={'Post1':'Post2', 'Pos
 non_dup_df = pd.concat([pd.DataFrame(0, index=range(non_dup_df.shape[0]), columns=['Duplicate']), non_dup_df], axis=1)
 
 #clean workspace
-del dup_ls
-del posts_ls
+#del dup_ls
+#del posts_ls
 #%% SPLITTING OF THE DATASET
 
 # shuffling non_dup_df and dup_df
@@ -282,7 +284,7 @@ similarity = tf.matmul(validation_embeddings, normalized_embeddings, transpose_b
 #%% WORD EMBEDDINGS: perform the training
 
 init = tf.global_variables_initializer()
-num_steps = 10
+num_steps = 5
 
 with tf.Session() as sess:
     init.run()
@@ -358,7 +360,7 @@ q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2']
 vocabulary_size=100
 embedding_size=7
 batch_size = 100
-epochs = 10
+epochs = 1
 
 #input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
@@ -406,22 +408,31 @@ optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
 
 #%% TRAINING
 
-def words_to_indexes(post, dictionary):
-    return np.asarray([dictionary[word] for word in post])
+def words_to_indexes(post, dictionary, q_max):
+    ls=[dictionary[word] for word in post]
+    delta=q_max-len(ls)
+    if delta > 0:
+        ls = ls + [0]*delta
+    arr=np.asarray(ls)
+    return arr
 
 batch_index = 0
-def generate_batch(train_df, posts_df, dictionary, batch_size):
+def generate_batch(df, posts_df, dictionary, batch_size):
     global batch_index
-    assert train_df.shape[0] % batch_size == 0
-    batch = train_df.iloc[batch_index : batch_index+batch_size]
+    assert df.shape[0] % batch_size == 0
+    batch = df.iloc[batch_index : batch_index+batch_size]
     batch = batch.apply(lambda x: pd.Series([x['Duplicate'],
-                                            words_to_indexes(posts_df['Tokens'].loc[x['Post1']], dictionary),
-                                            words_to_indexes(posts_df['Tokens'].loc[x['Post2']], dictionary)]), axis=1)
+                                            words_to_indexes(posts_df['Tokens'].loc[x['Post1']], dictionary, q_length),
+                                            words_to_indexes(posts_df['Tokens'].loc[x['Post2']], dictionary, q_length)]), axis=1)
     batch.columns = ['Duplicate', 'Post1', 'Post2']
-    batch_input = batch.as_matrix(columns=['Post1', 'Post2'])
+    
     batch_output = batch.as_matrix(columns=['Duplicate'])
     
-    batch_index = (batch_index+batch_size) % train_df.shape[0]
+    batch_input= batch[["Post1", "Post2"]]
+    batch_ls = batch_input.values.tolist()
+    batch_input = np.asarray(batch_ls)
+     
+    batch_index = (batch_index+batch_size) % df.shape[0]
     
     return batch_input, batch_output
 
@@ -431,6 +442,7 @@ with tf.Session() as sess:
     #initialize the variables
     sess.run(init_op)
     
+    #train_df = train_df[:100]
     n_batches = train_df.shape[0] // batch_size
     #loop through the epochs
     for epoch in range(epochs):
@@ -441,7 +453,25 @@ with tf.Session() as sess:
             params, c = sess.run([optimizer, loss], feed_dict = {x: x_batch, y: y_batch})
             avg_cost += c / n_batches
         print("Epoch: ", epoch+1, "Loss: ", avg_cost)
-    x_test, y_test = generate_batch(test_df, posts_df, dictionary, test_df.size[0])
-    acc = sess.run(accuracy, feed_dict={x: x_test, y:y_test})
+    
+    #test_df = test_df[:100]
+    n_batches_test=test_df.shape[0] // batch_size
+    batch_index=0
+    acc = 0
+    for j in range(n_batches_test):
+        x_test, y_test = generate_batch(test_df, posts_df, dictionary, batch_size)
+        acc_tmp = sess.run(accuracy, feed_dict={x: x_test, y:y_test})
+        acc=acc+(acc_tmp*batch_size)/test_df.shape[0]
     print('Training terminated! \n Accuracy on test set: ', acc)
 
+#%%
+a1=np.asarray([1,2,3,4,5])    
+a = np.arange(start=0, stop=4)
+b = np.arange(start=5, stop=10)
+c = np.arange(start=10, stop=15)
+d = np.arange(start=15, stop=20)
+e = np.arange(start=20, stop=25)
+f = np.arange(start=25, stop=30)
+g = np.arange(start=30, stop=35)
+h = np.arange(start=35, stop=40)
+arr = np.asarray([[a,b], [c,d], [e,f],[g,h]])
