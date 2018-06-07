@@ -10,11 +10,12 @@ import numpy as np
 
 class NonDupGenerator(object):
     
-    def __init__(self, dim, max_index, posts_df):
+    def __init__(self, dim, max_index, posts_df, links_df):
         super(NonDupGenerator, self).__init__()
         self.dim = dim
         self.max_index =max_index
         self.posts_df = posts_df
+        self.links_df = links_df
     
     def map_postId(self, args):
         x1 = self.posts_df.loc[args[0], 'Id']
@@ -27,7 +28,7 @@ class NonDupGenerator(object):
         Generate a dataframe of 2 columns and dim rows contaiing random indexes of posts
         """
         random_indexes = pd.DataFrame(np.random.randint(0, self.max_index, size=(self.dim,2)), columns=['Post1Id', 'Post2Id'])
-        self.df = random_indexes
+        self.df = random_indexes       
         self.df = self.df.apply(self.map_postId, axis=1)
         self.df.columns = ['Post1Id', 'Post2Id']
     
@@ -36,16 +37,18 @@ class NonDupGenerator(object):
         self.df = self.df.apply(lambda x : x if x['Post1Id'] != x['Post2Id'] else print("Error: same pair founded", x), axis=1)
     
     
-    def check_no_pairs_dup(self, links_df):
-        if (pd.merge(links_df, self.df).shape[0]!=0):
+    def check_no_pairs_dup(self):
+        if (pd.merge(self.links_df, self.df).shape[0]!=0):
             print("Error: duplicate found")
-        if (pd.merge(links_df, self.df.rename(index=str, columns={'Post1Id':'Post2Id', 'Post2Id':'Post1Id'})).shape[0]!=0):
+        if (pd.merge(self.links_df, self.df.rename(index=str, columns={'Post1Id':'Post2Id', 'Post2Id':'Post1Id'})).shape[0]!=0):
             print("Error: duplicate found")
     
     def generate_non_dup_df(self):
-        self.generate_random_indexes(self)
-        self.check_no_pairs_same_index(self)
-        self.check_no_pairs_dup(self)
-        return pd.concat([pd.DataFrame(0, index=range(self.dim), columns=['isDuplicate']), self.df], axis=1)
+        self.posts_df.reset_index(inplace=True)
+        self.generate_random_indexes()
+        self.posts_df.set_index('Id', inplace=True)
+        self.check_no_pairs_same_index()
+        self.check_no_pairs_dup()
+        return pd.concat([pd.DataFrame(0, index=range(self.dim), columns=['isDuplicate']), self.df], axis=1) #add the isDuplicate column
     
     

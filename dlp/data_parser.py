@@ -34,7 +34,7 @@ class XMLtoPandasParser(object):
         link = dict()
         link['Post1Id'] = elem.attrib.get('PostId')
         link['Post2Id'] = elem.attrib.get('RelatedPostId')
-        link['IsDuplicate'] = 1
+        link['isDuplicate'] = 1
         return link
     
     
