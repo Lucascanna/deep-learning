@@ -353,7 +353,7 @@ except ImportError:
   
 #%% NETWORK ARCHITECTURE
 
-#posts_df.set_index('Id', inplace=True)
+posts_df.set_index('Id', inplace=True)
 q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2'].tolist()].apply(lambda x : len(x)).max()
 vocabulary_size=100
 embedding_size=7
@@ -407,7 +407,7 @@ optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
 #%% TRAINING
 
 def words_to_indexes(post, dictionary):
-    return [dictionary[word] for word in post]
+    return np.asarray([dictionary[word] for word in post])
 
 batch_index = 0
 def generate_batch(train_df, posts_df, dictionary, batch_size):
@@ -444,8 +444,4 @@ with tf.Session() as sess:
     x_test, y_test = generate_batch(test_df, posts_df, dictionary, test_df.size[0])
     acc = sess.run(accuracy, feed_dict={x: x_test, y:y_test})
     print('Training terminated! \n Accuracy on test set: ', acc)
-
-
-    
-
 
