@@ -166,6 +166,8 @@ validation_df.to_csv("./validation_df.csv")
 
 #%% WORD EMBEDDINGS: define two helping functions and build the dataset
 
+vocabulary_size=10000
+
 def emb_build_dataset(posts, vocabulary_size):
     
     flat_posts = [word for post in posts for word in post]
@@ -236,7 +238,7 @@ posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[
 # dictionary: key=word, value=index
 # reversed_dictionary: key=index, value=word
 # count: list of tuples of type (word, num_of_occurences_in_the_text)
-data, count, dictionary, reversed_dictionary = emb_build_dataset(posts_df['Tokens'])
+data, count, dictionary, reversed_dictionary = emb_build_dataset(posts_df['Tokens'], vocabulary_size)
 
 #%% WORD EMBEDDINGS: build the skip-gram model with tensorflow
 
@@ -287,7 +289,7 @@ similarity = tf.matmul(validation_embeddings, normalized_embeddings, transpose_b
 #%% WORD EMBEDDINGS: perform the training
 
 #training duration
-num_steps = 5
+num_steps = 100001
 emb_batch_size = 128
 
 init = tf.global_variables_initializer()
