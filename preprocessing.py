@@ -223,8 +223,7 @@ def emb_generate_batch(data, batch_size, num_skips, skip_window):
     
     return batch, context
 
-#posts_df = pd.read_csv("posts_df.csv")
-#posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")})
+posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")})
 
 #BUILD THE DATASET
 # data: list of the indeces of the words in the text
@@ -357,8 +356,6 @@ except ImportError:
 
 posts_df.set_index('Id', inplace=True)
 q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2'].tolist()].apply(lambda x : len(x)).max()
-vocabulary_size=100
-embedding_size=7
 batch_size = 100
 epochs = 1
 
