@@ -174,7 +174,7 @@ def emb_build_dataset(posts):
     
     #give a unique index to each word using a dictionary
     dictionary = dict()
-    dictionary['Thiswordisunkown']=0
+    dictionary['Thiswordisunknown']=0
     for word, _ in count:
         dictionary[word]=len(dictionary)
     #reverse the dictionary
@@ -223,10 +223,15 @@ def emb_generate_batch(data, batch_size, num_skips, skip_window):
     
     return batch, context
 
-#posts_df = pd.read_csv("posts_df.csv")
-#posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")})
+#%% Read dataset from csv
+posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")})
+train_df = pd.read_csv("train_df.csv", index_col=0)
+test_df = pd.read_csv("tests_df.csv", index_col=0)
+ubuntu_embeddings = pd.read_csv("embedding.csv", index_col=0)
 
-#BUILD THE DATASET
+
+
+#%% BUILD THE DATASET
 # data: list of the indeces of the words in the text
 # dictionary: key=word, value=index
 # reversed_dictionary: key=index, value=word
@@ -284,7 +289,7 @@ similarity = tf.matmul(validation_embeddings, normalized_embeddings, transpose_b
 #%% WORD EMBEDDINGS: perform the training
 
 init = tf.global_variables_initializer()
-num_steps = 5
+num_steps = 100001
 
 with tf.Session() as sess:
     init.run()
@@ -321,6 +326,8 @@ with tf.Session() as sess:
     
     #get the final result!
     ubuntu_embeddings = normalized_embeddings.eval()
+    
+#np.savetxt('embedding.csv', ubuntu_embeddings)
 
 #%% WORD EMBEDDINGS: Plot results
     
@@ -357,10 +364,15 @@ except ImportError:
 
 posts_df.set_index('Id', inplace=True)
 q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2'].tolist()].apply(lambda x : len(x)).max()
-vocabulary_size=100
-embedding_size=7
-batch_size = 100
+
+#training duration
+batch_size = 32
 epochs = 1
+
+#hyperparameters
+window_size = 3
+clu = 10
+
 
 #input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
@@ -372,9 +384,6 @@ W0 = tf.Variable(ubuntu_embeddings)
 #output first layer: [batch_size x 2 x q_length x embedding_size]
 q_emb = tf.nn.embedding_lookup(W0, x)
 
-#hyperparameters
-window_size = 3
-clu = 10
 
 #convolutional layer: [batch_size x 2 x q_length x clu]
 conv_layer = tf.layers.conv2d(inputs=q_emb, filters=clu, kernel_size=[window_size, embedding_size], activation=tf.tanh, padding='same')
@@ -404,7 +413,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
 loss=tf.losses.mean_squared_error(y, score_layer)
 
 #minimize the loss using gradient descent
-optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 #%% TRAINING
 
@@ -413,6 +422,8 @@ def words_to_indexes(post, dictionary, q_max):
     delta=q_max-len(ls)
     if delta > 0:
         ls = ls + [0]*delta
+    elif delta<0:
+        ls = ls[:q_max]        
     arr=np.asarray(ls)
     return arr
 
@@ -442,7 +453,7 @@ with tf.Session() as sess:
     #initialize the variables
     sess.run(init_op)
     
-    #train_df = train_df[:100]
+    train_df = train_df[:1024]
     n_batches = train_df.shape[0] // batch_size
     #loop through the epochs
     for epoch in range(epochs):
@@ -454,7 +465,7 @@ with tf.Session() as sess:
             avg_cost += c / n_batches
         print("Epoch: ", epoch+1, "Loss: ", avg_cost)
     
-    #test_df = test_df[:100]
+    test_df = test_df[:224]
     n_batches_test=test_df.shape[0] // batch_size
     batch_index=0
     acc = 0
