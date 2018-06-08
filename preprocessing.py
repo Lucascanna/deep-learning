@@ -166,15 +166,15 @@ validation_df.to_csv("./validation_df.csv")
 
 #%% WORD EMBEDDINGS: define two helping functions and build the dataset
 
-def emb_build_dataset(posts):
+def emb_build_dataset(posts, vocabulary_size):
     
     flat_posts = [word for post in posts for word in post]
     #create a list of tuples (word, count) sorted by count
-    count = collections.Counter(flat_posts).most_common()
+    count = [["UNK", -1]]
+    count.extend(collections.Counter(flat_posts).most_common(vocabulary_size - 1))
     
     #give a unique index to each word using a dictionary
     dictionary = dict()
-    dictionary['Thiswordisunkown']=0
     for word, _ in count:
         dictionary[word]=len(dictionary)
     #reverse the dictionary
@@ -182,10 +182,16 @@ def emb_build_dataset(posts):
     
     #create a list, where, for each word in the corpus there is the corresponding index
     data = list()
+    unk_count = 0
     for word in flat_posts:
-        index = dictionary[word]
+        if word in dictionary:
+            index = dictionary[word]
+        else:
+            index=0
+            unk_count +=1
         data.append(index)
     
+    count[0][1] = unk_count  
     return data, count, dictionary, reversed_dictionary
 
 data_index = 0
@@ -231,21 +237,19 @@ posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[
 # reversed_dictionary: key=index, value=word
 # count: list of tuples of type (word, num_of_occurences_in_the_text)
 data, count, dictionary, reversed_dictionary = emb_build_dataset(posts_df['Tokens'])
-vocabulary_size = len(dictionary)
 
 #%% WORD EMBEDDINGS: build the skip-gram model with tensorflow
 
 # set the values of hyperparameters of the model
-emb_batch_size = 128
 skip_window = 1
 num_skip = 2
 embedding_size = 128
 num_sampled = 64
 
 #input layer (note that we don't explicitly need the one-hot style matrix, but only a vector with the indexes of the words)
-train_inputs = tf.placeholder(tf.int32, shape=[emb_batch_size])
+train_inputs = tf.placeholder(tf.int32, shape=[None])
 #output layer (note that we predict )
-train_context = tf.placeholder(tf.int32, shape=[emb_batch_size, 1])
+train_context = tf.placeholder(tf.int32, shape=[None, 1])
 
 #weights between input layer and hidden layer (this will be the matrix of embeddings)
 embeddings = tf.Variable(tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
@@ -282,8 +286,11 @@ similarity = tf.matmul(validation_embeddings, normalized_embeddings, transpose_b
 
 #%% WORD EMBEDDINGS: perform the training
 
-init = tf.global_variables_initializer()
+#training duration
 num_steps = 5
+emb_batch_size = 128
+
+init = tf.global_variables_initializer()
 
 with tf.Session() as sess:
     init.run()
