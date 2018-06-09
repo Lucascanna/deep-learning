@@ -230,10 +230,12 @@ def emb_generate_batch(data, batch_size, num_skips, skip_window):
     data_index = (data_index + len(data) - span) % len(data)
     
     return batch, context
+#%% read csv
+posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")}, index_col=0)
+train_df = pd.read_csv("train_df.csv", index_col=0)
+test_df = pd.read_csv("tests_df.csv", index_col=0)
 
-posts_df = pd.read_csv("posts_df.csv",converters={"Tokens": lambda x: x.strip("[]").split(", ")})
-
-#BUILD THE DATASET
+#%%BUILD THE DATASET
 # data: list of the indeces of the words in the text
 # dictionary: key=word, value=index
 # reversed_dictionary: key=index, value=word
@@ -243,9 +245,9 @@ data, count, dictionary, reversed_dictionary = emb_build_dataset(posts_df['Token
 #%% WORD EMBEDDINGS: build the skip-gram model with tensorflow
 
 # set the values of hyperparameters of the model
-skip_window = 1
+skip_window = 2
 num_skip = 2
-embedding_size = 128
+embedding_size = 100
 num_sampled = 64
 
 #input layer (note that we don't explicitly need the one-hot style matrix, but only a vector with the indexes of the words)
@@ -264,7 +266,7 @@ biases = tf.Variable(tf.zeros([vocabulary_size]))
 
 #define the loss function and the correspondent optimizer
 nce_loss = tf.reduce_mean(tf.nn.nce_loss(weights = weights, biases = biases, labels = train_context,inputs = embed, num_sampled = num_sampled, num_classes = vocabulary_size))
-optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(nce_loss)
+optimizer = tf.train.AdamOptimizer(0.5, epsilon=0.1).minimize(nce_loss)
 
 #VALIDATION OF THE MODEL
 #build the validation-set made of the 16 words among the top 200 frequent words
@@ -365,8 +367,8 @@ except ImportError:
 
 posts_df.set_index('Id', inplace=True)
 q_length = posts_df['Tokens'].loc[train_df['Post1'].tolist() + train_df['Post2'].tolist()].apply(lambda x : len(x)).max()
-batch_size = 100
-epochs = 1
+batch_size = 32
+epochs = 50
 
 #input layer: [batch_size x 2 x q_length]
 x = tf.placeholder(tf.int32, shape=[None, 2, q_length])
@@ -380,7 +382,7 @@ q_emb = tf.nn.embedding_lookup(W0, x)
 
 #hyperparameters
 window_size = 3
-clu = 10
+clu = 300
 
 #convolutional layer: [batch_size x 2 x q_length x clu]
 conv_layer = tf.layers.conv2d(inputs=q_emb, filters=clu, kernel_size=[window_size, embedding_size], activation=tf.tanh, padding='same')
@@ -410,12 +412,18 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, dtype=tf.float32))
 loss=tf.losses.mean_squared_error(y, score_layer)
 
 #minimize the loss using gradient descent
-optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+optimizer = tf.train.AdamOptimizer(1.0).minimize(loss)
 
 #%% TRAINING
 
+def pick_index(word):
+    try:
+        return dictionary[word]
+    except KeyError:
+        return 0
+
 def words_to_indexes(post, dictionary, q_max):
-    ls=[dictionary[word] for word in post]
+    ls=[pick_index(word) for word in post] 
     delta=q_max-len(ls)
     if delta > 0:
         ls = ls + [0]*delta
@@ -448,7 +456,7 @@ with tf.Session() as sess:
     #initialize the variables
     sess.run(init_op)
     
-    #train_df = train_df[:100]
+    train_df = train_df[:1024]
     n_batches = train_df.shape[0] // batch_size
     #loop through the epochs
     for epoch in range(epochs):
@@ -458,9 +466,10 @@ with tf.Session() as sess:
             x_batch, y_batch = generate_batch(train_df, posts_df, dictionary, batch_size)
             params, c = sess.run([optimizer, loss], feed_dict = {x: x_batch, y: y_batch})
             avg_cost += c / n_batches
+            print("Batch [", j ,"] " , avg_cost)
         print("Epoch: ", epoch+1, "Loss: ", avg_cost)
     
-    #test_df = test_df[:100]
+    test_df = test_df[:224]
     n_batches_test=test_df.shape[0] // batch_size
     batch_index=0
     acc = 0
