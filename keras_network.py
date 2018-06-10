@@ -50,14 +50,16 @@ def buildModel(vocabulary_size, q_length, embedding_size, clu, window_size):
     sum_layer_2=K.sum(conv_layer_2, axis=1)
     
     activation_1=Activation('tanh')(sum_layer_1)
-    activation_2=Activation('tnah')(sum_layer_2)
+    activation_2=Activation('tanh')(sum_layer_2)
     
-    similarity_layer= Dot(normalize=True)([activation_1,activation_2])
+    similarity_layer= Dot(axes=1, normalize=True)([activation_1,activation_2])
     
-    threshold= K.constant(0.5, dtype='float32', shape=q_1.shape)
+    threshold= K.constant(0.5, dtype='float32', shape=(batch_size,))
     predictions= K.cast(K.greater_equal(similarity_layer, threshold), dtype='int32')
     
-    return Model(inputs=[q_1, q_2], outputs=predictions)
+    output= Activation('linear')(predictions)
+    
+    return Model(inputs=[q_1, q_2], outputs=output)
 
 def compileModel(model):
     model.compile(loss='mean_squared_error',
