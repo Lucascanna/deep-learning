@@ -7,14 +7,14 @@ Created on Sun Jun 10 15:31:34 2018
 
 import numpy as np
 from keras.models import Model
-from keras.layers import Input,Embedding, Conv1D, Activation, Dot
+from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
 import keras.backend as K
 
 #%%
 
 #parameters of the network
 q_length=10
-vocabulary_size=70
+vocabulary_size=1000
 embedding_size=5
 window_size=3
 clu=7
@@ -46,25 +46,22 @@ def buildModel(vocabulary_size, q_length, embedding_size, clu, window_size):
     conv_layer_1=conv1d(lookup_layer_1)
     conv_layer_2=conv1d(lookup_layer_2)
     
-    sum_layer_1=K.sum(conv_layer_1, axis=1)
-    sum_layer_2=K.sum(conv_layer_2, axis=1)
+    sum_layer_1=Lambda(lambda x: K.sum(x,axis=1))(conv_layer_1)
+    sum_layer_2=Lambda(lambda x: K.sum(x,axis=1))(conv_layer_2)
     
     activation_1=Activation('tanh')(sum_layer_1)
     activation_2=Activation('tanh')(sum_layer_2)
     
-    similarity_layer= Dot(axes=1, normalize=True)([activation_1,activation_2])
+    similarity_layer= Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
     
-    threshold= K.constant(0.5, dtype='float32', shape=(batch_size,))
-    predictions= K.cast(K.greater_equal(similarity_layer, threshold), dtype='int32')
+    predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='int32'), name='predictions')(similarity_layer)
     
-    output= Activation('linear')(predictions)
-    
-    return Model(inputs=[q_1, q_2], outputs=output)
+    return Model(inputs=[q_1, q_2], outputs=[similarity_layer, predictions])
 
 def compileModel(model):
-    model.compile(loss='mean_squared_error',
+    model.compile(loss={'similarity' : 'mean_squared_error'},
                   optimizer='adam',
-                  metrics=['accuracy'])    
+                  metrics={'predictions' : 'accuracy'})    
     return model
 
 def trainModel(model, x_1_train, x_2_train, labels, batch_size, num_epochs):
@@ -74,7 +71,7 @@ def main():
     model=buildModel(vocabulary_size, q_length, embedding_size, clu, window_size)
     model=compileModel(model)
     train_history= trainModel(model, x_1_train, x_2_train, y_train, batch_size, num_epochs)
-    print(train_history.history)
+    print(train_history)
 
 main()
 
