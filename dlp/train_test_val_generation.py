@@ -23,7 +23,7 @@ class TrainTestValGenerator(object):
         """
         shuffle both datasets of duplicate and non-duplicate posts
         """
-        self.non_dup_df = self.df.sample(frac=1).reset_index(drop=True)
+        self.df = self.df.sample(frac=1).reset_index(drop=True)
         
     
     def generate_train(self):
