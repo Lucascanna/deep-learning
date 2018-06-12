@@ -91,9 +91,9 @@ class WordEmbedding(object):
     
     def trainModel(self, model, validation_model, reverse_dictionary, target, context, labels, batch_size, num_epochs):
         callback_list = [ValidationCallback(self.vocabulary_size, validation_model, reverse_dictionary),
-                         EarlyStopping(monitor='val_loss', patience=50), 
+                         EarlyStopping(monitor='val_loss', patience=5), 
                          TensorBoard(log_dir='./logs_embedding/', histogram_freq=0,
-                              write_graph=True, write_images=True, embeddings_layer_names=['embedding'], embeddings_freq=20000)]
+                              write_graph=True, write_images=True, embeddings_layer_names=['embedding'], embeddings_freq=5)]
         return model.fit(x=[target, context], y=labels, batch_size=batch_size, validation_split=0.12, epochs=num_epochs, callbacks=callback_list)
     
 

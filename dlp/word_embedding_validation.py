@@ -41,5 +41,5 @@ class ValidationCallback(Callback):
             print(log_str)
         
     def on_epoch_begin(self, epoch, logs):
-        if (epoch+1) % 2000 == 0:
+        if (epoch+1) % 5 == 0:
             self.run_sim()

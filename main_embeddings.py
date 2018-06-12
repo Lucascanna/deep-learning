@@ -13,10 +13,17 @@ from dlp.word_embedding import WordEmbedding
 
 
 def main():
+    
+    print("Reading posts from file...")
+    start= time.clock()
+    
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").split(", ")})
     
-    train_df= posts_df[:225000]
-    test_df= posts_df[225000:]
+    read_time=time.clock()-start
+    print("TIME TO READ THE DATA: ", read_time)
+    
+    train_df= posts_df[:80000]
+    test_df= posts_df[80000:100000]
     
     del posts_df
     
@@ -31,7 +38,7 @@ def main():
     #build data (conveert words into indexes)
     word_embedding = WordEmbedding(vocabulary_size, embedding_size, skip_window)
     [data_train, _, _, reversed_dictionary] = word_embedding.emb_build_dataset(train_df['Tokens'], vocabulary_size)
-    [data_test, _] = word_embedding.emb_build_dataset(test_df['Tokens'], vocabulary_size)
+    [data_test, _, _, _] = word_embedding.emb_build_dataset(test_df['Tokens'], vocabulary_size)
     
     #generate samples for the word embeddings
     [target_train, context_train, labels_train] = word_embedding.generate_samples(data_train)
@@ -47,13 +54,15 @@ def main():
     [model, validation_model] = word_embedding.buildmodel()
     model = word_embedding.compileModel(model)
     history = word_embedding.trainModel(model, validation_model, reversed_dictionary, 
-                                        target_train, context_train, labels_train, batch_size=64, num_epochs=100000)
+                                        target_train, context_train, labels_train, batch_size=128, num_epochs=50)
     
     train_time= time.clock()-start
     print("TIME TO TRAIN THE MODEL: ", train_time)
     print("HISTORY: ", history.history)
     
+main()
     
+
     
     
     
