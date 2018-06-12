@@ -8,3 +8,4 @@
 *.pyc
 *.pdf
 *.lan
+/__pycache__/*
