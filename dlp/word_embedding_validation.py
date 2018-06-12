@@ -5,13 +5,13 @@ from keras.callbacks import Callback
 
 class ValidationCallback(Callback):
     
-    def __init__(self, vocabulary_size, validation_model, reverse_dictionary, validation_set):
+    def __init__(self, vocabulary_size, validation_model, reverse_dictionary):
         
         super(ValidationCallback, self).__init__()
         self.vocabulary_size = vocabulary_size
         self.validation_model = validation_model
         self.reverse_dictionary = reverse_dictionary
-        self.validation_set = validation_set
+        self.validation_indexes = np.random.choice(200, 16, replace=False)
         
     def __get_sim(self, valid_word_idx):
         
@@ -27,12 +27,12 @@ class ValidationCallback(Callback):
     
     def run_sim(self):
         
-        validation_size = self.validation_set.shape[0]
+        validation_size = self.validation_indexes.shape[0]
         
         for i in range(validation_size):
-            valid_word = self.reverse_dictionary[self.validation_set[i]]
+            valid_word = self.reverse_dictionary[self.validation_indexes[i]]
             top_k = 8  # number of nearest neighbors
-            sim = self.__get_sim(self.validation_set[i])
+            sim = self.__get_sim(self.validation_indexes[i])
             nearest = (-sim).argsort()[1:top_k + 1]
             log_str = 'Nearest to %s:' % valid_word
             for k in range(top_k):
@@ -41,5 +41,5 @@ class ValidationCallback(Callback):
             print(log_str)
         
     def on_epoch_begin(self, epoch, logs):
-        if (epoch+1) % 5 == 0:
+        if (epoch+1) % 2000 == 0:
             self.run_sim()

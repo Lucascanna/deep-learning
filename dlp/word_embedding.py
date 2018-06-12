@@ -4,6 +4,7 @@ from keras.layers import Input, Dense, Reshape, Dot
 from keras.layers.embeddings import Embedding
 from keras.preprocessing.sequence import skipgrams
 from keras.preprocessing import sequence
+from keras.callbacks import EarlyStopping, TensorBoard
 import collections
 from dlp.word_embedding_validation import ValidationCallback
 
@@ -77,19 +78,23 @@ class WordEmbedding(object):
         # setup a cosine similarity operation for the validation
         similarity = Dot(axes=0, normalize=True)([target, context])
         # create the primary training model
-        model = Model(input=[input_target, input_context], output=[output, similarity])
-        validation_model = Model(input=[input_target, input_context], output=similarity)
+        model = Model(input=[input_target, input_context], output=[output])
+        validation_model = Model(input=[input_target, input_context], output=[similarity])
         
         return model, validation_model
     
     def compileModel(self, model):
         model.compile(loss={'output' : 'binary_crossentropy'},
-                      optimizer='rmsprop')    
+                      optimizer='rmsprop',
+                      metrics= ['accuracy'])    
         return model
     
-    def trainModel(self,model, validation_model, reverse_dictionary, validation_set, target, context, labels, batch_size, num_epochs):
-        callback_list = [ValidationCallback(self.vocabulary_size, validation_model,reverse_dictionary , validation_set)]
-        return model.fit(x=[target, context], y=labels, batch_size=batch_size, epochs=num_epochs, callbacks=callback_list)
+    def trainModel(self, model, validation_model, reverse_dictionary, target, context, labels, batch_size, num_epochs):
+        callback_list = [ValidationCallback(self.vocabulary_size, validation_model, reverse_dictionary),
+                         EarlyStopping(monitor='val_loss', patience=50), 
+                         TensorBoard(log_dir='./logs_embedding/', histogram_freq=0,
+                              write_graph=True, write_images=True, embeddings_layer_names=['embedding'], embeddings_freq=20000)]
+        return model.fit(x=[target, context], y=labels, batch_size=batch_size, validation_split=0.12, epochs=num_epochs, callbacks=callback_list)
     
 
 

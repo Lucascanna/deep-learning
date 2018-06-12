@@ -9,6 +9,10 @@ Created on Mon Jun  4 15:32:40 2018
 
 POSTS = "dlp/data/Posts.xml"
 LINKS = "dlp/data/PostLinks.xml"
+TOKENIZED_POSTS = "dlp/data/posts_df.csv"
+TRAIN_SET = "dlp/data/train_df.csv"
+TEST_SET = "dlp/data/tests_df.csv"
+VAL_SET = "dlp/data/validation_df.csv"
 
 
 # DEFINITION OF RE

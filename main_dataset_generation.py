@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import time
 
+import dlp.util as util
 from dlp.data_loader import XMLDataLoader
 from dlp.data_filter import XMLDataFilter
 from dlp.data_parser import XMLtoPandasParser
@@ -95,10 +96,10 @@ def main():
     
     start= time.clock()
     print("Writing on files...")
-    posts_df.to_csv("./dlp/data/posts_df.csv")
-    test_df.to_csv("./dlp/data/tests_df.csv")
-    train_df.to_csv("./dlp/data/train_df.csv")
-    val_df.to_csv("./dlp/data/validation_df.csv")
+    posts_df.to_csv(util.TOKENIZED_POSTS)
+    test_df.to_csv(util.TEST_SET)
+    train_df.to_csv(util.TRAIN_SET)
+    val_df.to_csv(util.VAL_SET)
     
     write_time= time.clock() - start
     print("TIME TO WRITE THE TEXT: ", write_time)
