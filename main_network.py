@@ -19,7 +19,7 @@ def pick_index(word, dictionary):
         return 0
 
 def words_to_indexes(post, dictionary, q_max):
-    ls=[pick_index(word) for word in post] 
+    ls=[pick_index(word, dictionary) for word in post] 
     delta=q_max-len(ls)
     if delta > 0:
         ls = ls + [0]*delta
@@ -37,10 +37,14 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
     x_1_train = batch["Post1Indexes"]
     x_1_train_ls = x_1_train.values.tolist()
     x_1_train = np.asarray(x_1_train_ls)
+    print("X1train shape: ", x_1_train.shape)
+    print(x_1_train[0, :])
     
     x_2_train = batch["Post2Indexes"]
     x_2_train_ls = x_2_train.values.tolist()
     x_2_train = np.asarray(x_2_train_ls)
+    print("X2train shape: ", x_2_train.shape)
+    print(x_2_train[0,:])
     
     return x_1_train, x_2_train, y_train
 
@@ -59,7 +63,7 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df]) 
-    
+    train_df = train_df[:1500]
     #read the dictionary
     with open(util.DICTIONARY, 'r') as fp:
         dictionary = json.load(fp)
@@ -67,22 +71,20 @@ def main():
     read_time=time.clock()-start
     print("TIME TO READ THE DATA: ", read_time)
     
-    
-    q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).max()
-    x_1_train, x_2_train, y_train = build_indexes_dataset(train_df, posts_df, dictionary, q_length)
-    
-    print("Computing q_length...")
     #hyperparameters
-    q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).max()
     clu = 200
     window_size = 4
+    
+    print("Computing q_length...")
+    q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).max()
+    x_1_train, x_2_train, y_train = build_indexes_dataset(train_df, posts_df, dictionary, q_length)
     
     print("Training and validating the model...")
     start=time.clock()
     
     model_builder = ModelBuilder(ubuntu_embeddings, q_length, clu, window_size)
     model = model_builder.buildModel()
-    model_builder.compileModel()
+    model_builder.compileModel(model)
     train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=50)
     
     train_time= time.clock()-start

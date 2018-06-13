@@ -53,12 +53,12 @@ class ModelBuilder(object):
         
         return Model(inputs=[q_1, q_2], outputs=[similarity_layer, predictions])
     
-    def compileModel(model):
+    def compileModel(self,model):
         model.compile(loss={'similarity' : 'mean_squared_error'},
                       optimizer='adam',
                       metrics={'predictions' : 'accuracy'})   
 
-    def trainModel(model, x_1_train, x_2_train, labels, batch_size, num_epochs):
+    def trainModel(self,model, x_1_train, x_2_train, labels, batch_size, num_epochs):
         sess = tf.Session()
         tf.summary.FileWriter('./logs/', sess.graph)
         # tensorboard --logdir=logs  for executing TensorBoard 
