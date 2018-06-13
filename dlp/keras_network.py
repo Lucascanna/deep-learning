@@ -51,13 +51,13 @@ class ModelBuilder(object):
         
         predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='int32'), name='predictions')(similarity_layer)
         
-        return Model(inputs=[q_1, q_2], outputs=[similarity_layer, predictions])
+        return Model(inputs=[q_1, q_2], outputs=predictions)
         
     
     def compileModel(self,model):
-        model.compile(loss={'similarity' : 'mean_squared_error'},
+        model.compile(loss='binary_crossentropy',
                       optimizer='adam',
-                      metrics={'predictions' : 'accuracy'})   
+                      metrics=['accuracy'])
                       
 
     def trainModel(self,model, x_1_train, x_2_train, labels, batch_size, num_epochs):
