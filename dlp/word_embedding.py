@@ -46,7 +46,7 @@ class WordEmbedding(object):
             data.append(index)
         
         count[0][1] = unk_count
-        with open('dlp/data/dictionary.json', 'w') as fp:
+        with open(util.DICTIONARY, 'w+') as fp:
             json.dump(dictionary, fp)
         return data, count, dictionary, reversed_dictionary
     
