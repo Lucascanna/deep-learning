@@ -44,7 +44,7 @@ class ModelBuilder(object):
         self.window_size=window_size
 
     def embeddings_initialize(self, shape, dtype=None):
-        assert shape==self.emebddings.shape
+        assert shape==self.embeddings.shape
         return self.embeddings
         
     
@@ -52,7 +52,7 @@ class ModelBuilder(object):
         q_1= Input(shape=(q_length,), dtype='int32')
         q_2= Input(shape=(q_length,), dtype='int32')    
         
-        lookup_layer_1=Embedding(vocabulary_size, embedding_size, input_length=q_length, embeddings_initializer=self.embeddings_initilize)(q_1)
+        lookup_layer_1=Embedding(vocabulary_size, embedding_size, input_length=q_length, embeddings_initializer=self.embeddings_initialize)(q_1)
         lookup_layer_2=Embedding(vocabulary_size, embedding_size, input_length=q_length, embeddings_initializer=self.embeddings_initialize)(q_2)
         
         conv1d=Conv1D(filters=clu, kernel_size=window_size, activation='tanh')
