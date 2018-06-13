@@ -5,7 +5,6 @@ Created on Sun Jun 10 15:31:34 2018
 @author: lucas
 """
 
-import numpy as np
 from keras.models import Model
 from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
 from keras.callbacks import TensorBoard, EarlyStopping
@@ -32,13 +31,13 @@ class ModelBuilder(object):
         
     
     def buildModel(self):
-        q_1= Input(shape=(q_length,), dtype='int32')
-        q_2= Input(shape=(q_length,), dtype='int32')    
+        q_1= Input(shape=(self.q_length,), dtype='int32')
+        q_2= Input(shape=(self.q_length,), dtype='int32')    
         
-        lookup_layer_1=Embedding(vocabulary_size, embedding_size, input_length=q_length, embeddings_initializer=self.embeddings_initialize)(q_1)
-        lookup_layer_2=Embedding(vocabulary_size, embedding_size, input_length=q_length, embeddings_initializer=self.embeddings_initialize)(q_2)
+        lookup_layer_1=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize)(q_1)
+        lookup_layer_2=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize)(q_2)
         
-        conv1d=Conv1D(filters=clu, kernel_size=window_size, activation='tanh')
+        conv1d=Conv1D(filters=self.clu, kernel_size=self.window_size, activation='tanh')
         conv_layer_1=conv1d(lookup_layer_1)
         conv_layer_2=conv1d(lookup_layer_2)
         
