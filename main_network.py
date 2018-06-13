@@ -27,6 +27,7 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df])
+    train_df = train_df[:1500]
     x_1_train = train_df["Post1Id"].values
     x_2_train = train_df["Post2Id"].values
     y_train = train_df["isDuplicate"].values
@@ -38,7 +39,7 @@ def main():
     print("Computing q_length...")
     #hyperparameters
     q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).max()
-    clu = 300
+    clu = 200
     window_size = 4
     
     print("Training and validating the model...")

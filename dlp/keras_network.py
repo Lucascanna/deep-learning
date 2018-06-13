@@ -15,23 +15,6 @@ import tensorflow as tf
 
 #%%
 
-#parameters of the network
-q_length=10
-vocabulary_size=1000
-embedding_size=5
-window_size=3
-clu=7
-
-#parameters of the training
-batch_size=32
-num_epochs=5
-
-#fake data
-x_1_train= np.arange(64*q_length, dtype=np.int32).reshape((64, q_length))
-x_2_train= np.arange(64*q_length, dtype=np.int32).reshape((64, q_length))
-y_train= np.concatenate((np.ones(32), np.ones(32)))
-ubuntu_embeddings=np.ones((vocabulary_size,embedding_size), dtype=np.float32)
-
 class ModelBuilder(object):
     
     def __init__(self, embeddings, q_length, clu, window_size):
