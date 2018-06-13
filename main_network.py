@@ -68,13 +68,13 @@ def main():
     print("TIME TO READ THE DATA: ", read_time)
     
     
-    
     q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).max()
     x_1_train, x_2_train, y_train = build_indexes_dataset(train_df, posts_df, dictionary, q_length)
     
     print("Computing q_length...")
     #hyperparameters
-    clu = 300
+    q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).max()
+    clu = 200
     window_size = 4
     
     print("Training and validating the model...")

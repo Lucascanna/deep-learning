@@ -7,6 +7,8 @@ from keras.preprocessing import sequence
 from keras.callbacks import EarlyStopping, TensorBoard
 import collections
 from dlp.word_embedding_validation import ValidationCallback
+import json
+import dlp.util as util
 
 
 class WordEmbedding(object):
@@ -43,7 +45,9 @@ class WordEmbedding(object):
                 unk_count +=1
             data.append(index)
         
-        count[0][1] = unk_count  
+        count[0][1] = unk_count
+        with open(util.DICTIONARY, 'w+') as fp:
+            json.dump(dictionary, fp)
         return data, count, dictionary, reversed_dictionary
     
     def generate_samples(self, data):
