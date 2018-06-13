@@ -32,19 +32,24 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
                                             words_to_indexes(posts_df['Tokens'].loc[x['Post2Id']], dictionary, q_length)]), axis=1)
     batch.columns = ['isDuplicate', 'Post1Indexes', 'Post2Indexes']
     
-    y_train = batch.as_matrix(columns=['Duplicate'])
+    y_train = batch.as_matrix(columns=['isDuplicate'])
+    print("Ytrain shape: ", y_train.shape)
+    print(y_train[0,:])
+    print("type :", y_train.dtype)
     
     x_1_train = batch["Post1Indexes"]
     x_1_train_ls = x_1_train.values.tolist()
     x_1_train = np.asarray(x_1_train_ls)
     print("X1train shape: ", x_1_train.shape)
     print(x_1_train[0, :])
+    print("type :", x_1_train.dtype)
     
     x_2_train = batch["Post2Indexes"]
     x_2_train_ls = x_2_train.values.tolist()
     x_2_train = np.asarray(x_2_train_ls)
     print("X2train shape: ", x_2_train.shape)
     print(x_2_train[0,:])
+    print("type :", x_2_train.dtype)
     
     return x_1_train, x_2_train, y_train
 
