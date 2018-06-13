@@ -28,8 +28,8 @@ def words_to_indexes(post, dictionary, q_max):
 
 def build_indexes_dataset(df, posts_df, dictionary, q_length):
     batch = df.apply(lambda x: pd.Series([x['isDuplicate'],
-                                            words_to_indexes(posts_df['Tokens'].loc[x['Post1']], dictionary, q_length),
-                                            words_to_indexes(posts_df['Tokens'].loc[x['Post2']], dictionary, q_length)]), axis=1)
+                                            words_to_indexes(posts_df['Tokens'].loc[x['Post1Id']], dictionary, q_length),
+                                            words_to_indexes(posts_df['Tokens'].loc[x['Post2Id']], dictionary, q_length)]), axis=1)
     batch.columns = ['isDuplicate', 'Post1Indexes', 'Post2Indexes']
     
     y_train = batch.as_matrix(columns=['Duplicate'])
