@@ -8,7 +8,7 @@ Created on Sun Jun 10 15:31:34 2018
 import numpy as np
 from keras.models import Model
 from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, EarlyStopping
 import keras.backend as K
 import tensorflow as tf
 
@@ -74,10 +74,7 @@ class ModelBuilder(object):
     def compileModel(model):
         model.compile(loss={'similarity' : 'mean_squared_error'},
                       optimizer='adam',
-                      metrics={'predictions' : 'accuracy'})    
-        return model
-    
-
+                      metrics={'predictions' : 'accuracy'})   
 
     def trainModel(model, x_1_train, x_2_train, labels, batch_size, num_epochs):
         sess = tf.Session()
@@ -86,17 +83,13 @@ class ModelBuilder(object):
         # localhost:6006 to view the TensorBoard
         tensorboard = TensorBoard(log_dir='./logs/', histogram_freq=0,
                               write_graph=True, write_images=True)
+        early_stopping = EarlyStopping(patience=5)
         return model.fit(x=[x_1_train, x_2_train], 
                          y=labels, 
                          batch_size=batch_size, 
                          epochs=num_epochs,
-                         callbacks = [tensorboard])
-    
-def main():
-    model=buildModel(vocabulary_size, q_length, embedding_size, clu, window_size)
-    model=compileModel(model)
-    train_history= trainModel(model, x_1_train, x_2_train, y_train, batch_size, num_epochs)
-    print(train_history.history)
+                         validation_split=0.04,
+                         callbacks = [tensorboard, early_stopping])
 
 
 
