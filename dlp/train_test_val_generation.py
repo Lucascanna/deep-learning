@@ -16,10 +16,10 @@ class TrainTestValGenerator(object):
         self.train_dim=train_dim
         self.test_dim=test_dim
         self.val_dim=val_dim
-        self.shuffle()
+        self.__shuffle()
         
         
-    def shuffle(self):
+    def __shuffle(self):
         """
         shuffle both datasets of duplicate and non-duplicate posts
         """

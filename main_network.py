@@ -32,9 +32,9 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
                                             words_to_indexes(posts_df['Tokens'].loc[x['Post2Id']], dictionary, q_length)]), axis=1)
     batch.columns = ['isDuplicate', 'Post1Indexes', 'Post2Indexes']
     
-    y_train = batch.as_matrix(columns=['isDuplicate'])
+    y_train = batch.as_matrix(columns=['isDuplicate']).astype(np.float32)
     print("Ytrain shape: ", y_train.shape)
-    print(y_train[0,:])
+    print(y_train[0])
     print("type :", y_train.dtype)
     
     x_1_train = batch["Post1Indexes"]
@@ -59,7 +59,7 @@ def main():
     start= time.clock()
     
     #read embeddings
-    ubuntu_embeddings = np.loadtxt(util.EMBEDDINGS)
+    ubuntu_embeddings = np.loadtxt(util.EMBEDDING)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").split(", ")})   
@@ -68,7 +68,7 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df]) 
-    train_df = train_df[:1500]
+    train_df = train_df[-50:]
     #read the dictionary
     with open(util.DICTIONARY, 'r') as fp:
         dictionary = json.load(fp)

@@ -34,8 +34,9 @@ class ModelBuilder(object):
         q_1= Input(shape=(self.q_length,), dtype='int32')
         q_2= Input(shape=(self.q_length,), dtype='int32')    
         
-        lookup_layer_1=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize)(q_1)
-        lookup_layer_2=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize)(q_2)
+        lookup=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize)
+        lookup_layer_1= lookup(q_1)
+        lookup_layer_2= lookup(q_2)
         
         conv1d=Conv1D(filters=self.clu, kernel_size=self.window_size, activation='tanh')
         conv_layer_1=conv1d(lookup_layer_1)
@@ -49,13 +50,13 @@ class ModelBuilder(object):
         
         similarity_layer= Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
         
-        predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='int32'), name='predictions')(similarity_layer)
+        #predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='float32'), name='predictions')(similarity_layer)
         
-        return Model(inputs=[q_1, q_2], outputs=predictions)
+        return Model(inputs=[q_1, q_2], outputs=similarity_layer)
         
     
     def compileModel(self,model):
-        model.compile(loss='binary_crossentropy',
+        model.compile(loss= 'binary_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
                       
