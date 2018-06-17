@@ -41,6 +41,6 @@ class ValidationCallback(Callback):
                 log_str = '%s %s,' % (log_str, close_word)
             print(log_str)
         
-    def on_epoch_begin(self, epoch, logs):
-        if (epoch+1) % 5 == 0:
+    def on_epoch_end(self, epoch, logs):
+        if (epoch+1) % 1 == 0:
             self.run_sim()

@@ -4,7 +4,7 @@ Created on Sun Jun 10 15:31:34 2018
 
 @author: lucas
 """
-
+import numpy as np
 from keras.models import Model
 from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
 from keras.callbacks import TensorBoard, EarlyStopping
