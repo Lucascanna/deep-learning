@@ -27,6 +27,7 @@ def words_to_indexes(post, dictionary, q_max):
     return arr
 
 def build_indexes_dataset(df, posts_df, dictionary, q_length):
+    print("First post: ", posts_df["Tokens"].loc[1])
     batch = df.apply(lambda x: pd.Series([x['isDuplicate'],
                                             words_to_indexes(posts_df['Tokens'].loc[x['Post1Id']], dictionary, q_length),
                                             words_to_indexes(posts_df['Tokens'].loc[x['Post2Id']], dictionary, q_length)]), axis=1)
@@ -37,18 +38,19 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
     print(y_train[:10])
     print("type :", y_train.dtype)
     
+    print(posts_df.loc[df["Post1Id"][0]])
     x_1_train = batch["Post1Indexes"]
     x_1_train_ls = x_1_train.values.tolist()
     x_1_train = np.asarray(x_1_train_ls)
     print("X1train shape: ", x_1_train.shape)
-    print(x_1_train[0, :])
+    print(x_1_train[:10, :])
     print("type :", x_1_train.dtype)
     
     x_2_train = batch["Post2Indexes"]
     x_2_train_ls = x_2_train.values.tolist()
     x_2_train = np.asarray(x_2_train_ls)
     print("X2train shape: ", x_2_train.shape)
-    print(x_2_train[0,:])
+    print(x_2_train[:10,:])
     print("type :", x_2_train.dtype)
     
     return x_1_train, x_2_train, y_train
@@ -62,7 +64,7 @@ def main():
     embeddings = np.loadtxt(util.EMBEDDING_WIKI)
     
     #read train, test and validation set
-    posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").split(", ")})   
+    posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
     train_df = pd.read_csv(util.TRAIN_SET, index_col=0)
     test_df = pd.read_csv(util.TEST_SET, index_col=0)
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
@@ -72,6 +74,7 @@ def main():
     #read the dictionary
     with open(util.DICTIONARY_WIKI, 'r') as fp:
         dictionary = json.load(fp)
+    dictionary = {k.strip("'"): v for k, v in dictionary.items()}
     
     read_time=time.clock()-start
     print("TIME TO READ THE DATA: ", read_time)
