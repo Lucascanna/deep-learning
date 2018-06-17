@@ -15,6 +15,7 @@ TEST_SET = "dlp/data/tests_df.csv"
 VAL_SET = "dlp/data/validation_df.csv"
 EMBEDDING = "dlp/data/embedding.csv"
 DICTIONARY = "dlp/data/dictionary.json"
+DICTIONARY_FULL = "dlp/data/dictionary_full.json"
 
 # DEFINITION OF RE
 

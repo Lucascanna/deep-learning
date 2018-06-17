@@ -25,7 +25,7 @@ class WordEmbedding(object):
         flat_posts = [word for post in posts for word in post]
         #create a list of tuples (word, count) sorted by count
         count = [["UNK", -1]]
-        count.extend(collections.Counter(flat_posts).most_common(vocabulary_size - 1))
+        count.extend(collections.Counter(flat_posts).most_common())
         
         #give a unique index to each word using a dictionary
         dictionary = dict()
@@ -46,7 +46,7 @@ class WordEmbedding(object):
             data.append(index)
         
         count[0][1] = unk_count
-        with open(util.DICTIONARY, 'w+') as fp:
+        with open(util.DICTIONARY_FULL, 'w+') as fp:
             json.dump(dictionary, fp)
         return data, count, dictionary, reversed_dictionary
     
