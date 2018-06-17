@@ -59,7 +59,7 @@ def main():
     start= time.clock()
     
     #read embeddings
-    ubuntu_embeddings = np.loadtxt(util.EMBEDDING)
+    embeddings = np.loadtxt(util.EMBEDDING_WIKI)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").split(", ")})   
@@ -70,7 +70,7 @@ def main():
     train_df = pd.concat([train_df, val_df]) 
     train_df = train_df[:1500]
     #read the dictionary
-    with open(util.DICTIONARY, 'r') as fp:
+    with open(util.DICTIONARY_WIKI, 'r') as fp:
         dictionary = json.load(fp)
     
     read_time=time.clock()-start
@@ -87,7 +87,7 @@ def main():
     print("Training and validating the model...")
     start=time.clock()
     
-    model_builder = ModelBuilder(ubuntu_embeddings, q_length, clu, window_size)
+    model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
     model = model_builder.buildModel()
     model_builder.compileModel(model)
     train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=20)
