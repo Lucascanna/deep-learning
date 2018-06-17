@@ -34,7 +34,7 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
     
     y_train = batch.as_matrix(columns=['isDuplicate']).astype(np.float32)
     print("Ytrain shape: ", y_train.shape)
-    print(y_train[0])
+    print(y_train[:10])
     print("type :", y_train.dtype)
     
     x_1_train = batch["Post1Indexes"]

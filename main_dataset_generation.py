@@ -76,10 +76,14 @@ def main():
     
     print("TRAIN SET: ", train_df.shape[0], " samples")
     print(train_df.head())
+    print("Num of positive samples: ", train_df[train_df["isDuplicate"]==1].shape[0])
     print("TEST SET: ", test_df.shape[0], " samples")
     print(test_df.head())
+    print("Num of positive samples: ", test_df[test_df["isDuplicate"]==1].shape[0])
     print("VALIDATION SET: ", val_df.shape[0], " samples")
     print(val_df.head())
+    print("Num of positive samples: ", val_df[val_df["isDuplicate"]==1].shape[0])
+
     
     #tokenization of questions
     start=time.clock()
