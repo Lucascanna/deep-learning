@@ -13,8 +13,10 @@ TOKENIZED_POSTS = "dlp/data/posts_df.csv"
 TRAIN_SET = "dlp/data/train_df.csv"
 TEST_SET = "dlp/data/tests_df.csv"
 VAL_SET = "dlp/data/validation_df.csv"
-EMBEDDING = "dlp/data/embedding.csv"
-DICTIONARY = "dlp/data/dictionary.json"
+EMBEDDING_UBUNTU = "dlp/data/embedding.csv"
+DICTIONARY_UBUNTU = "dlp/data/dictionary.json"
+EMBEDDING_WIKI = "dlp/data/embedding_wiki.csv"
+DICTIONARY_WIKI = "dlp/data/dictionary_wiki.json"
 
 # DEFINITION OF RE
 
