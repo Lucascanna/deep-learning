@@ -22,8 +22,8 @@ def main():
     read_time=time.clock()-start
     print("TIME TO READ THE DATA: ", read_time)
     
-    train_df= posts_df[:80000]
-    test_df= posts_df[80000:100000]
+    train_df= posts_df #[:80000]
+    test_df= posts_df[22500:]   #[80000:100000]
     
     del posts_df
     
@@ -54,7 +54,7 @@ def main():
     [model, validation_model] = word_embedding.buildmodel()
     model = word_embedding.compileModel(model)
     history = word_embedding.trainModel(model, validation_model, reversed_dictionary, 
-                                        target_train, context_train, labels_train, batch_size=128, num_epochs=50)
+                                        target_train, context_train, labels_train, batch_size=64, num_epochs=2)
     
     train_time= time.clock()-start
     print("TIME TO TRAIN THE MODEL: ", train_time)

@@ -68,7 +68,7 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df]) 
-    train_df = train_df[-50:]
+    train_df = train_df[:1500]
     #read the dictionary
     with open(util.DICTIONARY, 'r') as fp:
         dictionary = json.load(fp)
@@ -90,7 +90,7 @@ def main():
     model_builder = ModelBuilder(ubuntu_embeddings, q_length, clu, window_size)
     model = model_builder.buildModel()
     model_builder.compileModel(model)
-    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=50)
+    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=20)
     
     train_time= time.clock()-start
     print("TIME TO TRAIN THE MODEL: ", train_time)
