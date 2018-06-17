@@ -1,0 +1,4 @@
+ubuntu_full   ?
+ubuntu_10000  0.74
+wiki_full     0.63
+wiki_10000    0.66 
