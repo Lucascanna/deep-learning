@@ -16,8 +16,10 @@ VAL_SET = "dlp/data/validation_df.csv"
 DICTIONARY_FULL = "dlp/data/dictionary_full.json"
 EMBEDDING_UBUNTU = "dlp/data/embedding.csv"
 DICTIONARY_UBUNTU = "dlp/data/dictionary.json"
-EMBEDDING_WIKI = "dlp/data/embedding_wiki.csv"
-DICTIONARY_WIKI = "dlp/data/dictionary_wiki.json"
+EMBEDDING_WIKI_full_200 = "dlp/data/embedding_wiki_full_200.csv"
+DICTIONARY_WIKI_full = "dlp/data/dictionary_wiki_full.json"
+DICTIONARY_WIKI_10000 = "dlp/data/dictionary_wiki_10000.json"
+EMBEDDING_WIKI_10000_200 = "dlp/data/embedding_10000_200.csv"
 
 # DEFINITION OF RE
 

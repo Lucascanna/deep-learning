@@ -23,6 +23,8 @@ def words_to_indexes(post, dictionary, q_max):
     delta=q_max-len(ls)
     if delta > 0:
         ls = ls + [0]*delta
+    if delta < 0:
+        ls = ls[:q_max]
     arr=np.asarray(ls)
     return arr
 
@@ -61,7 +63,7 @@ def main():
     start= time.clock()
     
     #read embeddings
-    embeddings = np.loadtxt(util.EMBEDDING_WIKI)
+    embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -70,9 +72,9 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df]) 
-    train_df = train_df[:1500]
+    #train_df = train_df[:15000]
     #read the dictionary
-    with open(util.DICTIONARY_WIKI, 'r') as fp:
+    with open(util.DICTIONARY_UBUNTU, 'r') as fp:
         dictionary = json.load(fp)
     dictionary = {k.strip("'"): v for k, v in dictionary.items()}
     
@@ -84,7 +86,8 @@ def main():
     window_size = 4
     
     print("Computing q_length...")
-    q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).max()
+    q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).mean()
+    q_length = int(round(q_length))
     x_1_train, x_2_train, y_train = build_indexes_dataset(train_df, posts_df, dictionary, q_length)
     
     print("Training and validating the model...")
@@ -93,7 +96,7 @@ def main():
     model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
     model = model_builder.buildModel()
     model_builder.compileModel(model)
-    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=20)
+    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
     
     train_time= time.clock()-start
     print("TIME TO TRAIN THE MODEL: ", train_time)
