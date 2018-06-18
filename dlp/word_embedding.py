@@ -4,7 +4,7 @@ from keras.layers import Input, Dense, Reshape, Dot
 from keras.layers.embeddings import Embedding
 from keras.preprocessing.sequence import skipgrams
 from keras.preprocessing import sequence
-from keras.callbacks import EarlyStopping, TensorBoard
+from keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 import collections
 from dlp.word_embedding_validation import ValidationCallback
 import json
@@ -25,7 +25,7 @@ class WordEmbedding(object):
         flat_posts = [word for post in posts for word in post]
         #create a list of tuples (word, count) sorted by count
         count = [["UNK", -1]]
-        count.extend(collections.Counter(flat_posts).most_common())
+        count.extend(collections.Counter(flat_posts).most_common(self.vocabulary_size - 1))
         
         #give a unique index to each word using a dictionary
         dictionary = dict()
@@ -95,7 +95,11 @@ class WordEmbedding(object):
     
     def trainModel(self, model, validation_model, reverse_dictionary, target, context, labels, batch_size, num_epochs):
 #        callback_list = [ValidationCallback(self.vocabulary_size, validation_model, reverse_dictionary),
-#                         EarlyStopping(monitor='val_loss', patience=5), 
+#                         EarlyStopping(monitor='val_loss', patience=5),
+#                         ModelCheckpoint(
+#                                 filepath='model_embedding.h5',
+#                                 monitor='val_loss',
+#                                 save_best_only=True),
 #                         TensorBoard(log_dir='./logs_embedding/', histogram_freq=0,
 #                              write_graph=True, write_images=True, embeddings_layer_names=['embedding'], embeddings_freq=5)]
 #        return model.fit(x=[target, context], y=labels, batch_size=batch_size, validation_split=0.12, epochs=num_epochs, callbacks=callback_list)
@@ -143,7 +147,5 @@ class WordEmbedding(object):
                 print("Iteration {}, loss={}".format(cnt, loss))
             if cnt % 10000 == 0:
                 sim_cb.run_sim()
-            
-
 
 
