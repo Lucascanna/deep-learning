@@ -63,11 +63,11 @@ class WordEmbedding(object):
     def buildmodel(self):
 
         # input layer (note that we don't explicitly need the one-hot style matrix, but only a vector with the indexes of the words)
-        input_target = Input(shape=(1,), dtype='float32')
-        input_context = Input(shape=(1,), dtype='float32')
+        input_target = Input(shape=(1,))
+        input_context = Input(shape=(1,))
         
         # embedding layer
-        embedding = Embedding(self.vocabulary_size, self.embedding_size, name='embedding')
+        embedding = Embedding(self.vocabulary_size, self.embedding_size, name='embedding', input_length=1)
         target = embedding(input_target)
         target = Reshape((self.embedding_size, 1))(target) #column vector
         context = embedding(input_context)
@@ -94,12 +94,56 @@ class WordEmbedding(object):
         return model
     
     def trainModel(self, model, validation_model, reverse_dictionary, target, context, labels, batch_size, num_epochs):
-        callback_list = [ValidationCallback(self.vocabulary_size, validation_model, reverse_dictionary),
-                         EarlyStopping(monitor='val_loss', patience=5), 
-                         TensorBoard(log_dir='./logs_embedding/', histogram_freq=0,
-                              write_graph=True, write_images=True, embeddings_layer_names=['embedding'], embeddings_freq=5)]
-        return model.fit(x=[target, context], y=labels, batch_size=batch_size, validation_split=0.12, epochs=num_epochs, callbacks=callback_list)
-    
+#        callback_list = [ValidationCallback(self.vocabulary_size, validation_model, reverse_dictionary),
+#                         EarlyStopping(monitor='val_loss', patience=5), 
+#                         TensorBoard(log_dir='./logs_embedding/', histogram_freq=0,
+#                              write_graph=True, write_images=True, embeddings_layer_names=['embedding'], embeddings_freq=5)]
+#        return model.fit(x=[target, context], y=labels, batch_size=batch_size, validation_split=0.12, epochs=num_epochs, callbacks=callback_list)
+        
+        validation_indexes = np.random.choice(200, 16, replace=False)
+        valid_size = validation_indexes.shape[0]
+        
+        class SimilarityCallback:
+            def run_sim(self):
+                for i in range(valid_size):
+                    valid_word = reverse_dictionary[validation_indexes[i]]
+                    top_k = 8  # number of nearest neighbors
+                    sim = self._get_sim(validation_indexes[i])
+                    nearest = (-sim).argsort()[1:top_k + 1]
+                    log_str = 'Nearest to %s:' % valid_word
+                    for k in range(top_k):
+                        close_word = reverse_dictionary[nearest[k]]
+                        log_str = '%s %s,' % (log_str, close_word)
+                    print(log_str)
+        
+            @staticmethod
+            def _get_sim(valid_word_idx):
+                sim = np.zeros((10000,))
+                in_arr1 = np.zeros((1,))
+                in_arr2 = np.zeros((1,))
+                in_arr1[0,] = valid_word_idx
+                for i in range(10000):
+                    in_arr2[0,] = i
+                    out = validation_model.predict_on_batch([in_arr1, in_arr2])
+                    sim[i] = out
+                return sim
+        sim_cb = SimilarityCallback()
+        
+        
+        arr_1 = np.zeros((1,))
+        arr_2 = np.zeros((1,))
+        arr_3 = np.zeros((1,))
+        for cnt in range(num_epochs):
+            idx = np.random.randint(0, len(labels)-1)
+            arr_1[0,] = target[idx]
+            arr_2[0,] = context[idx]
+            arr_3[0,] = labels[idx]
+            loss = model.train_on_batch([arr_1, arr_2], arr_3)
+            if cnt % 100 == 0:
+                print("Iteration {}, loss={}".format(cnt, loss))
+            if cnt % 10000 == 0:
+                sim_cb.run_sim()
+            
 
 
 
