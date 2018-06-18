@@ -63,7 +63,7 @@ def main():
     start= time.clock()
     
     #read embeddings
-    embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
+    embeddings = np.loadtxt(util.EMBEDDING_WIKI_10000_200)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -74,7 +74,7 @@ def main():
     train_df = pd.concat([train_df, val_df]) 
     #train_df = train_df[:15000]
     #read the dictionary
-    with open(util.DICTIONARY_UBUNTU, 'r') as fp:
+    with open(util.DICTIONARY_WIKI_10000, 'r') as fp:
         dictionary = json.load(fp)
     dictionary = {k.strip("'"): v for k, v in dictionary.items()}
     
