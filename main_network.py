@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import time
 import json
+from skopt import gp_minimize
+from skopt.space import Integer
 
 from dlp.keras_network import ModelBuilder
 import dlp.util as util
@@ -63,7 +65,7 @@ def main():
     start= time.clock()
     
     #read embeddings
-    embeddings = np.loadtxt(util.EMBEDDING_WIKI_10000_200)
+    embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -74,7 +76,7 @@ def main():
     train_df = pd.concat([train_df, val_df]) 
     #train_df = train_df[:15000]
     #read the dictionary
-    with open(util.DICTIONARY_WIKI_10000, 'r') as fp:
+    with open(util.DICTIONARY_UBUNTU, 'r') as fp:
         dictionary = json.load(fp)
     dictionary = {k.strip("'"): v for k, v in dictionary.items()}
     
@@ -82,8 +84,8 @@ def main():
     print("TIME TO READ THE DATA: ", read_time)
     
     #hyperparameters
-    clu = 200
-    window_size = 4
+    #clu = 200
+    #window_size = 4
     
     print("Computing q_length...")
     q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).mean()
@@ -93,13 +95,31 @@ def main():
     print("Training and validating the model...")
     start=time.clock()
     
-    model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
-    model = model_builder.buildModel()
-    model_builder.compileModel(model)
-    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
+    
+    #Hyperparameters wikipedia
+    dim_window_size = Integer(low=2, high=20, name='window_size')
+    dim_clu = Integer(low=100, high=400, name='clu')
+    
+    default_parameters = [4, 200]
+    dimensions = [dim_window_size,
+                  dim_clu]
+    
+#    model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
+#    model = model_builder.buildModel()
+#    model_builder.compileModel(model)
+#    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
+    
+    model_builder = ModelBuilder(embeddings, q_length)
+    search_result = gp_minimize(func=model_builder.fitness,
+                            dimensions=dimensions,
+                            acq_func='EI', # Expected Improvement.
+                            n_calls=40,
+                            x0=default_parameters)
+    print("Best parameters found: ", search_result.x)
+    print("Validation accuracy: ", -search_result.fun)
     
     train_time= time.clock()-start
     print("TIME TO TRAIN THE MODEL: ", train_time)
-    print("HISTORY: ", train_history.history)
+    #print("HISTORY: ", train_history.history)
     
 main()
