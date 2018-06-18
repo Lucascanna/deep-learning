@@ -23,15 +23,15 @@ class ModelBuilder(object):
         self.vocabulary_size=embeddings.shape[0]
         self.embedding_size=embeddings.shape[1]
         self.q_length=q_length
-        self.clu=clu
-        self.window_size=window_size
+        #self.clu=clu
+        #self.window_size=window_size
 
     def embeddings_initialize(self, shape, dtype=None):
         assert shape==self.embeddings.shape
         return self.embeddings
         
     
-    def buildModel(self):
+    def buildModel(self, clu, window_size):
         q_1= Input(shape=(self.q_length,), dtype='int32')
         q_2= Input(shape=(self.q_length,), dtype='int32')    
         
@@ -39,7 +39,7 @@ class ModelBuilder(object):
         lookup_layer_1= lookup(q_1)
         lookup_layer_2= lookup(q_2)
         
-        conv1d=Conv1D(filters=self.clu, kernel_size=self.window_size, activation='tanh')
+        conv1d=Conv1D(filters=clu, kernel_size=window_size, activation='tanh')
         conv_layer_1=conv1d(lookup_layer_1)
         conv_layer_2=conv1d(lookup_layer_2)
         
@@ -77,6 +77,65 @@ class ModelBuilder(object):
                          epochs=num_epochs,
                          validation_split=0.04,
                          callbacks = [tensorboard, early_stopping])
+        
+    def log_dir_name(self, window_size, clu):
+        # The dir-name for the TensorBoard log-dir.
+        s = "./wind_{0}_clu_{1}/"
+    
+        # Insert all the hyper-parameters in the dir-name.
+        log_dir = s.format(window_size,
+                           clu)
+    
+        return log_dir
+    
+    @use_named_args(dimensions=dimensions)
+    def fitness(self, window_size, clu, x_1_train, x_2_train, labels, batch_size, num_epochs):
+    
+        # Print the hyper-parameters.
+        print('vocabulary size: {0}',vocabulary_size)
+        print('embedding_size:', embedding_size)
+        print('window_size:', window_size)
+        print('clu:', clu)
+        print()
+        
+        model = self.builModel(window_size=window_size,
+                             clu=clu)
+    
+        log_dir = self.log_dir_name(window_size, clu)
+        
+        tensorboard = TensorBoard(
+            log_dir=log_dir,
+            histogram_freq=0,
+            write_graph=True,
+            write_grads=False,
+            write_images=False)
+        early_stopping = EarlyStopping(patience=20)
+       
+        history = model.fit(x=[x_1_train, x_2_train],
+                            y=data.train.labels,
+                            y=labels, 
+                            batch_size=batch_size, 
+                            epochs=num_epochs,
+                            validation_split=0.04,
+                            callbacks = [tensorboard, early_stopping])
+    
+        accuracy = max(history.history['val_acc'])
+    
+        print()
+        print("Accuracy: {0:.2%}".format(accuracy))
+        print()
+    
+        global best_accuracy
+    
+        if accuracy > best_accuracy:
+            model.save(path_best_model)
+            best_accuracy = accuracy
+    
+        del model
+        
+        K.clear_session()
+        
+        return -accuracy
 
 
 
