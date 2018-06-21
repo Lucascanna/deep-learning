@@ -52,6 +52,7 @@ class WordEmbedding(object):
     
     def generate_samples(self, data):
 
+        data = data[:17000000]
         sampling_table = sequence.make_sampling_table(self.vocabulary_size)
         couples, labels = skipgrams(data, self.vocabulary_size, window_size=self.skip_window, sampling_table=sampling_table)
         word_target, word_context = zip(*couples)
@@ -82,8 +83,8 @@ class WordEmbedding(object):
         # setup a cosine similarity operation for the validation
         similarity = Dot(axes=0, normalize=True)([target, context])
         # create the primary training model
-        model = Model(input=[input_target, input_context], output=[output])
-        validation_model = Model(input=[input_target, input_context], output=[similarity])
+        model = Model(input=[input_target, input_context], output=output)
+        validation_model = Model(input=[input_target, input_context], output=similarity)
         
         return model, validation_model
     

@@ -10,6 +10,7 @@ import time
 import json
 from skopt import gp_minimize
 from skopt.space import Integer
+from keras.models import load_model
 
 from dlp.keras_network import ModelBuilder
 import dlp.util as util
@@ -65,6 +66,10 @@ def main():
     start= time.clock()
     
     #read embeddings
+#    model = load_model('model_embedding.h5')
+#    layer_dict = dict([(layer.name, layer) for layer in model.layers])
+#    embeddings = layer_dict['embedding'].get_weights()[0]
+
     embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
     
     #read train, test and validation set
@@ -110,10 +115,11 @@ def main():
 #    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
     
     model_builder = ModelBuilder(embeddings, q_length)
-    search_result = gp_minimize(func=model_builder.fitness,
+    
+    search_result = gp_minimize(func=model_builder.fitness(4, 200, x_1_train, x_2_train, y_train),
                             dimensions=dimensions,
                             acq_func='EI', # Expected Improvement.
-                            n_calls=40,
+                            n_calls=11,
                             x0=default_parameters)
     print("Best parameters found: ", search_result.x)
     print("Validation accuracy: ", -search_result.fun)

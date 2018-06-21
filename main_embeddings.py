@@ -29,8 +29,8 @@ def main():
     
     #hyperparameters
     vocabulary_size=10000
-    skip_window = 2
-    embedding_size = 200
+    skip_window = 3
+    embedding_size = 300
     
     print("Data preprocessing...")
     start= time.clock()
@@ -54,11 +54,11 @@ def main():
     [model, validation_model] = word_embedding.buildmodel()
     model = word_embedding.compileModel(model)
     history = word_embedding.trainModel(model, validation_model, reversed_dictionary, 
-                                        target_train, context_train, labels_train, batch_size=128, num_epochs=10)
+                                        target_train, context_train, labels_train, batch_size=128, num_epochs=200000)
     
     train_time= time.clock()-start
     print("TIME TO TRAIN THE MODEL: ", train_time)
-    print("HISTORY: ", history.history)
+    #print("HISTORY: ", history.history)
     
 main()
     

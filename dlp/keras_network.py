@@ -17,7 +17,7 @@ import tensorflow as tf
 
 class ModelBuilder(object):
     
-    def __init__(self, embeddings, q_length, clu, window_size):
+    def __init__(self, embeddings, q_length):
         super(ModelBuilder, self).__init__()
         self.embeddings=embeddings
         self.vocabulary_size=embeddings.shape[0]
@@ -80,7 +80,7 @@ class ModelBuilder(object):
         
     def log_dir_name(self, window_size, clu):
         # The dir-name for the TensorBoard log-dir.
-        s = "./wind_{0}_clu_{1}/"
+        s = "/wind_{0}_clu_{1}/"
     
         # Insert all the hyper-parameters in the dir-name.
         log_dir = s.format(window_size,
@@ -88,20 +88,20 @@ class ModelBuilder(object):
     
         return log_dir
     
-    @use_named_args(dimensions=dimensions)
-    def fitness(self, window_size, clu, x_1_train, x_2_train, labels, batch_size, num_epochs):
+    def fitness(self, window_size, clu, x_1_train, x_2_train, labels, batch_size=128, num_epochs=200):
     
         # Print the hyper-parameters.
-        print('vocabulary size: {0}',vocabulary_size)
-        print('embedding_size:', embedding_size)
         print('window_size:', window_size)
         print('clu:', clu)
         print()
         
-        model = self.builModel(window_size=window_size,
+        global best_accuracy
+         best_accuracy=0
+        
+        model = self.buildModel(window_size=window_size,
                              clu=clu)
-    
-        log_dir = self.log_dir_name(window_size, clu)
+        self.compileModel(model)
+        log_dir = "./logs/" + self.log_dir_name(window_size, clu)
         
         tensorboard = TensorBoard(
             log_dir=log_dir,
@@ -112,7 +112,6 @@ class ModelBuilder(object):
         early_stopping = EarlyStopping(patience=20)
        
         history = model.fit(x=[x_1_train, x_2_train],
-                            y=data.train.labels,
                             y=labels, 
                             batch_size=batch_size, 
                             epochs=num_epochs,
@@ -125,10 +124,9 @@ class ModelBuilder(object):
         print("Accuracy: {0:.2%}".format(accuracy))
         print()
     
-        global best_accuracy
     
         if accuracy > best_accuracy:
-            model.save(path_best_model)
+            model.save("best_model.h5")
             best_accuracy = accuracy
     
         del model
