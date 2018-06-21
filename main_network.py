@@ -10,7 +10,9 @@ import time
 import json
 from skopt import gp_minimize
 from skopt.space import Integer
-from keras.models import load_model
+from keras.callbacks import TensorBoard, EarlyStopping
+from skopt.utils import use_named_args
+import keras.backend as K
 
 from dlp.keras_network import ModelBuilder
 import dlp.util as util
@@ -60,6 +62,63 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
     
     return x_1_train, x_2_train, y_train
 
+#Hyperparameters wikipedia
+dim_window_size = Integer(low=2, high=20, name='window_size')
+dim_clu = Integer(low=100, high=400, name='clu')
+dimensions = [dim_window_size,
+              dim_clu]
+
+@use_named_args(dimensions=dimensions)
+def fitness(window_size, clu, batch_size=128, num_epochs=150):
+    
+    window_size = int(window_size)
+    clu = int(clu)
+    # Print the hyper-parameters.
+    print('window_size:', window_size)
+    print(type(window_size))
+    print('clu:', clu)
+    print()
+    
+    global best_accuracy
+    best_accuracy=0
+    
+    model = model_builder.buildModel(window_size=window_size,
+                         clu=clu)
+    model_builder.compileModel(model)
+    log_dir = "./logs/" + model_builder.log_dir_name(window_size, clu)
+    
+    tensorboard = TensorBoard(
+        log_dir=log_dir,
+        histogram_freq=0,
+        write_graph=True,
+        write_grads=False,
+        write_images=False)
+    early_stopping = EarlyStopping(patience=20)
+   
+    history = model.fit(x=[model_builder.x1, model_builder.x2],
+                        y=model_builder.y, 
+                        batch_size=batch_size, 
+                        epochs=num_epochs,
+                        validation_split=0.04,
+                        callbacks = [tensorboard, early_stopping])
+
+    accuracy = max(history.history['val_acc'])
+
+    print()
+    print("Accuracy: {0:.2%}".format(accuracy))
+    print()
+
+
+    if accuracy > best_accuracy:
+        model.save("best_model.h5")
+        best_accuracy = accuracy
+
+    del model
+    
+    K.clear_session()
+    
+    return -accuracy
+
 def main():
     
     print("Reading data from file...")
@@ -101,25 +160,16 @@ def main():
     print("Training and validating the model...")
     start=time.clock()
     
-    
-    #Hyperparameters wikipedia
-    dim_window_size = Integer(low=2, high=20, name='window_size')
-    dim_clu = Integer(low=100, high=400, name='clu')
-
-    dimensions = [dim_window_size,
-                  dim_clu]
-    
 #    model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
 #    model = model_builder.buildModel()
 #    model_builder.compileModel(model)
 #    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
-    
-    x_1_train = x_1_train[:1024]
-    x_2_train = x_2_train[:1024]
-    y_train = y_train[:1024]
+
+    global model_builder
+        
     model_builder = ModelBuilder(embeddings, q_length, x_1_train, x_2_train, y_train, dimensions)
     
-    search_result = gp_minimize(func=model_builder.fitness,
+    search_result = gp_minimize(func=fitness,
                             dimensions=dimensions,
                             acq_func='EI', # Expected Improvement.
                             n_calls=11,

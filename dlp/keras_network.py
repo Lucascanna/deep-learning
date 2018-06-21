@@ -8,7 +8,6 @@ Created on Sun Jun 10 15:31:34 2018
 import time
 from keras.models import Model
 from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
-from keras.callbacks import TensorBoard, EarlyStopping
 import keras.backend as K
 import tensorflow as tf
 
@@ -91,53 +90,6 @@ class ModelBuilder(object):
                            clu)
     
         return log_dir
-    
-    def fitness(self, window_size, clu, batch_size=128, num_epochs=1):
-    
-        # Print the hyper-parameters.
-        print('window_size:', window_size)
-        print('clu:', clu)
-        print()
-        
-        global best_accuracy
-        best_accuracy=0
-        
-        model = self.buildModel(window_size=window_size,
-                             clu=clu)
-        self.compileModel(model)
-        log_dir = "./logs/" + self.log_dir_name(window_size, clu)
-        
-        tensorboard = TensorBoard(
-            log_dir=log_dir,
-            histogram_freq=0,
-            write_graph=True,
-            write_grads=False,
-            write_images=False)
-        early_stopping = EarlyStopping(patience=20)
-       
-        history = model.fit(x=[self.x1, self.x2],
-                            y=self.y, 
-                            batch_size=batch_size, 
-                            epochs=num_epochs,
-                            validation_split=0.04,
-                            callbacks = [tensorboard, early_stopping])
-    
-        accuracy = max(history.history['val_acc'])
-    
-        print()
-        print("Accuracy: {0:.2%}".format(accuracy))
-        print()
-    
-    
-        if accuracy > best_accuracy:
-            model.save("best_model.h5")
-            best_accuracy = accuracy
-    
-        del model
-        
-        K.clear_session()
-        
-        return -accuracy
 
 
 
