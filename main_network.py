@@ -70,7 +70,8 @@ def main():
 #    layer_dict = dict([(layer.name, layer) for layer in model.layers])
 #    embeddings = layer_dict['embedding'].get_weights()[0]
 
-    embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
+    #embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
+    embeddings = np.zeros(shape=(10000, 150))
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -104,8 +105,7 @@ def main():
     #Hyperparameters wikipedia
     dim_window_size = Integer(low=2, high=20, name='window_size')
     dim_clu = Integer(low=100, high=400, name='clu')
-    
-    default_parameters = [4, 200]
+
     dimensions = [dim_window_size,
                   dim_clu]
     
@@ -114,13 +114,16 @@ def main():
 #    model_builder.compileModel(model)
 #    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
     
-    model_builder = ModelBuilder(embeddings, q_length)
+    x_1_train = x_1_train[:1024]
+    x_2_train = x_2_train[:1024]
+    y_train = y_train[:1024]
+    model_builder = ModelBuilder(embeddings, q_length, x_1_train, x_2_train, y_train, dimensions)
     
-    search_result = gp_minimize(func=model_builder.fitness(4, 200, x_1_train, x_2_train, y_train),
+    search_result = gp_minimize(func=model_builder.fitness,
                             dimensions=dimensions,
                             acq_func='EI', # Expected Improvement.
                             n_calls=11,
-                            x0=default_parameters)
+                            x0 = [4, 200])
     print("Best parameters found: ", search_result.x)
     print("Validation accuracy: ", -search_result.fun)
     

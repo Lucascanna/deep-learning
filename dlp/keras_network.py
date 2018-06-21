@@ -4,7 +4,7 @@ Created on Sun Jun 10 15:31:34 2018
 
 @author: lucas
 """
-import numpy as np
+
 import time
 from keras.models import Model
 from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
@@ -17,12 +17,16 @@ import tensorflow as tf
 
 class ModelBuilder(object):
     
-    def __init__(self, embeddings, q_length):
+    def __init__(self, embeddings, q_length, x1, x2, y, dimensions):
         super(ModelBuilder, self).__init__()
         self.embeddings=embeddings
         self.vocabulary_size=embeddings.shape[0]
         self.embedding_size=embeddings.shape[1]
         self.q_length=q_length
+        self.x1 = x1
+        self.x2 = x2
+        self.y = y
+        self.dimensions = dimensions
         #self.clu=clu
         #self.window_size=window_size
 
@@ -39,7 +43,7 @@ class ModelBuilder(object):
         lookup_layer_1= lookup(q_1)
         lookup_layer_2= lookup(q_2)
         
-        conv1d=Conv1D(filters=clu, kernel_size=window_size, activation='tanh')
+        conv1d=Conv1D(filters=clu, kernel_size=window_size, activation='tanh', padding='same')
         conv_layer_1=conv1d(lookup_layer_1)
         conv_layer_2=conv1d(lookup_layer_2)
         
@@ -88,7 +92,7 @@ class ModelBuilder(object):
     
         return log_dir
     
-    def fitness(self, window_size, clu, x_1_train, x_2_train, labels, batch_size=128, num_epochs=200):
+    def fitness(self, window_size, clu, batch_size=128, num_epochs=1):
     
         # Print the hyper-parameters.
         print('window_size:', window_size)
@@ -96,7 +100,7 @@ class ModelBuilder(object):
         print()
         
         global best_accuracy
-         best_accuracy=0
+        best_accuracy=0
         
         model = self.buildModel(window_size=window_size,
                              clu=clu)
@@ -111,8 +115,8 @@ class ModelBuilder(object):
             write_images=False)
         early_stopping = EarlyStopping(patience=20)
        
-        history = model.fit(x=[x_1_train, x_2_train],
-                            y=labels, 
+        history = model.fit(x=[self.x1, self.x2],
+                            y=self.y, 
                             batch_size=batch_size, 
                             epochs=num_epochs,
                             validation_split=0.04,
