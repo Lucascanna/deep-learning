@@ -23,7 +23,7 @@ def main():
     print("TIME TO READ THE DATA: ", read_time)
     
     train_df= posts_df[:80000]
-    test_df= posts_df[22500:]   #[80000:100000]
+    test_df= posts_df[80000:100000]
     
     del posts_df
     

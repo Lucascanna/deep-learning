@@ -18,8 +18,8 @@ from dlp.train_test_val_generation import TrainTestValGenerator
 from dlp.tokenizer import Tokenizer
 
 def drop_inconsistent_links(posts_df, links_df):
-    cond1 = pd.isnull(posts_df.loc[links_df['Post1Id'].values]['Text'].values)
-    cond2 = pd.isnull(posts_df.loc[links_df['Post2Id'].values]['Text'].values)
+    cond1 = pd.isnull(posts_df.loc[links_df['Post1Id'].values]['Tokens'].values)
+    cond2 = pd.isnull(posts_df.loc[links_df['Post2Id'].values]['Tokens'].values)
     cond = np.logical_not(cond1) & np.logical_not(cond2)
     return links_df[cond]
 
@@ -50,6 +50,26 @@ def main():
     """
     load_time = time.clock() - start
     print("TIME TO LOAD AND PREPROCESS THE DATA: ", load_time)
+    
+    
+    #tokenization of questions
+    start=time.clock()
+    print("Tokenizing text..")
+    
+    tokenizer = Tokenizer(posts_df)
+    posts_df["Tokens"] = tokenizer.tokenize()
+    
+    tokenization_time= time.clock() - start
+    print("TIME TO TOKENIZE THE TEXT: ", tokenization_time)
+    print("NEW TOKENS COLUMN IN THE POSTS DATAFRAME: ")
+    print(posts_df["Tokens"].head())
+    
+    posts_df.drop(labels=["Text"], axis=1, inplace=True)
+    
+    
+    #remove ouliers in posts
+    mask = posts_df['Tokens'].apply(lambda x : len(x)<=1000 and len(x)>=20).tolist()
+    posts_df = posts_df[mask]
     
     #remove inconsistencies in links
     dup_df = drop_inconsistent_links(posts_df, dup_df)
@@ -83,21 +103,8 @@ def main():
     print("VALIDATION SET: ", val_df.shape[0], " samples")
     print(val_df.head())
     print("Num of positive samples: ", val_df[val_df["isDuplicate"]==1].shape[0])
-
     
-    #tokenization of questions
-    start=time.clock()
-    print("Tokenizing text..")
-    
-    tokenizer = Tokenizer(posts_df)
-    posts_df["Tokens"] = tokenizer.tokenize()
-    
-    tokenization_time= time.clock() - start
-    print("TIME TO TOKENIZE THE TEXT: ", tokenization_time)
-    print("NEW TOKENS COLUMN IN THE POSTS DATAFRAME: ")
-    print(posts_df["Tokens"].head())
-    posts_df.drop(labels=["Text"], axis=1, inplace=True)
-    
+    #saving on files
     start= time.clock()
     print("Writing on files...")
     posts_df.to_csv(util.TOKENIZED_POSTS)
