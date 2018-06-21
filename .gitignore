@@ -12,3 +12,5 @@
 /server/*
 *.DESKTOP-MHKMV67
 *.txt
+logs/*
+*.h5
