@@ -7,7 +7,7 @@ Created on Sun Jun 10 15:31:34 2018
 
 import time
 from keras.models import Model
-from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
+from keras.layers import Input,Embedding, Conv2D, Activation, Dot, Lambda, Reshape
 import keras.backend as K
 import tensorflow as tf
 from keras.callbacks import TensorBoard, EarlyStopping
@@ -38,18 +38,34 @@ class ModelBuilder(object):
         lookup=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize, trainable=False)
         lookup_layer_1= lookup(q_1)
         lookup_layer_2= lookup(q_2)
+        print("Lookup shape: ", lookup_layer_2.shape)
+
+        expand = Lambda(lambda x: K.expand_dims(x, axis=-1))
+        expanded_layer_1 = expand(lookup_layer_1)
+        expanded_layer_2 = expand(lookup_layer_2)
+        print("Expand shape: ", expanded_layer_1.shape)
         
-        conv1d=Conv1D(filters=self.clu, kernel_size=self.window_size, activation='tanh', padding='same')
-        conv_layer_1=conv1d(lookup_layer_1)
-        conv_layer_2=conv1d(lookup_layer_2)
-        
-        sum_layer_1=Lambda(lambda x: K.sum(x,axis=1))(conv_layer_1)
-        sum_layer_2=Lambda(lambda x: K.sum(x,axis=1))(conv_layer_2)
-        
-        activation_1=Activation('tanh')(sum_layer_1)
-        activation_2=Activation('tanh')(sum_layer_2)
+        conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size), activation='tanh', padding='valid')
+        conv_layer_1=conv2d(expanded_layer_1)
+        conv_layer_2=conv2d(expanded_layer_2)
+        print("Conv shape: ", conv_layer_1.shape)
+
+        sum_layer = Lambda(lambda x: K.sum(x,axis=1))
+        sum_layer_1=sum_layer(conv_layer_1)
+        sum_layer_2=sum_layer(conv_layer_2)
+        print("Sum shape: ", sum_layer_1.shape)
+
+        reshape_layer = Reshape(target_shape=(self.clu,))
+        reshape_layer_1 = reshape_layer(sum_layer_1)
+        reshape_layer_2 = reshape_layer(sum_layer_2)
+        print("Reshape shape: ", reshape_layer_1.shape)
+
+        activation_layer = Activation('tanh')
+        activation_1= activation_layer(reshape_layer_1)
+        activation_2=activation_layer(reshape_layer_2)
         
         similarity_layer= Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
+        print("Dot shape: ", similarity_layer.shape)
         
         #predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='float32'), name='predictions')(similarity_layer)
         

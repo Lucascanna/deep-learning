@@ -72,8 +72,7 @@ def main():
 #    layer_dict = dict([(layer.name, layer) for layer in model.layers])
 #    embeddings = layer_dict['embedding'].get_weights()[0]
 
-    #embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
-    embeddings = np.zeros(shape=(10000, 150))
+    embeddings = np.loadtxt(util.EMBEDDING_WIKI_10000_200)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -82,7 +81,10 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df]) 
-    #train_df = train_df[:15000]
+    train_df = train_df[:1000]
+
+    print("TRAINING SET...")
+    print(train_df.head(5))
     #read the dictionary
     with open(util.DICTIONARY_UBUNTU, 'r') as fp:
         dictionary = json.load(fp)
@@ -92,8 +94,8 @@ def main():
     print("TIME TO READ THE DATA: ", read_time)
     
     #hyperparameters
-    clu = 200
-    window_size = 4
+    clu = 300
+    window_size = 3
     
     print("Computing q_length...")
     q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).mean()
@@ -102,7 +104,7 @@ def main():
     
     print("Training and validating the model...")
     start=time.clock()
-    
+
     model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
     model = model_builder.buildModel()
     model_builder.compileModel(model)
