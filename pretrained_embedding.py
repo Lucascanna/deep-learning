@@ -9,12 +9,10 @@ import numpy as np
 import json
 
 dictionary_wiki = {}
-f = open('glove.6B.200d.txt')
+f = open('dlp/data/glove.6B.200d.txt')
 
-with open('dictionary_full.json', 'r') as fp:
+with open('dlp/data/dictionary_full.json', 'r') as fp:
     dictionary = json.load(fp)
-
-
 
 index = 0
 dictionary_wiki['UNK'] = index
@@ -42,10 +40,10 @@ print('Found %s word vectors.' % len(dictionary_wiki))
 
 
 #%%
-with open('dictionary_wiki_10000.json', 'w+') as fp:
-    json.dump(dictionary, fp)
+with open('dlp/data/dictionary_wiki_10000.json', 'w+') as fp:
+    json.dump(result, fp)
             
-np.savetxt('embedding_wiki_10000_200.csv', embedding_matrix)
+np.savetxt('dlp/data/embedding_wiki_10000_200.csv', embedding_matrix)
 
 
 #%%
