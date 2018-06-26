@@ -45,7 +45,7 @@ class ModelBuilder(object):
         expanded_layer_2 = expand(lookup_layer_2)
         print("Expand shape: ", expanded_layer_1.shape)
         
-        conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size), activation='tanh', padding='valid')
+        conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size // 10), activation='tanh', padding='valid')
         conv_layer_1=conv2d(expanded_layer_1)
         conv_layer_2=conv2d(expanded_layer_2)
         print("Conv shape: ", conv_layer_1.shape)
