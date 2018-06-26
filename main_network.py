@@ -72,7 +72,7 @@ def main():
 #    layer_dict = dict([(layer.name, layer) for layer in model.layers])
 #    embeddings = layer_dict['embedding'].get_weights()[0]
 
-    embeddings = np.loadtxt(util.EMBEDDING_WIKI_10000_200)
+    embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -81,12 +81,12 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df]) 
-    train_df = train_df[:15000]
+    #train_df = train_df[:100]
 
     print("TRAINING SET...")
     print(train_df.head(5))
     #read the dictionary
-    with open(util.DICTIONARY_WIKI_10000, 'r') as fp:
+    with open(util.DICTIONARY_UBUNTU, 'r') as fp:
         dictionary = json.load(fp)
     dictionary = {k.strip("'"): v for k, v in dictionary.items()}
     print(list(dictionary.keys())[:10])
@@ -95,7 +95,7 @@ def main():
     print("TIME TO READ THE DATA: ", read_time)
     
     #hyperparameters
-    clu = 300
+    clu = 600
     window_size = 3
     
     print("Computing q_length...")
@@ -109,7 +109,7 @@ def main():
     model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
     model = model_builder.buildModel()
     model_builder.compileModel(model)
-    #print(model.summary())
+    print(model.summary())
     train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
 
     train_time= time.clock()-start
