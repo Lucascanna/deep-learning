@@ -10,31 +10,28 @@ from keras.models import Model
 from keras.layers import Input,Embedding, Conv1D, Activation, Dot, Lambda
 import keras.backend as K
 import tensorflow as tf
+from keras.callbacks import TensorBoard, EarlyStopping
 
 
 #%%
 
 class ModelBuilder(object):
     
-    def __init__(self, embeddings, q_length, x1, x2, y, dimensions):
+    def __init__(self, embeddings, q_length, clu, window_size):
         super(ModelBuilder, self).__init__()
         self.embeddings=embeddings
         self.vocabulary_size=embeddings.shape[0]
         self.embedding_size=embeddings.shape[1]
         self.q_length=q_length
-        self.x1 = x1
-        self.x2 = x2
-        self.y = y
-        self.dimensions = dimensions
-        #self.clu=clu
-        #self.window_size=window_size
+        self.clu=clu
+        self.window_size=window_size
 
     def embeddings_initialize(self, shape, dtype=None):
         assert shape==self.embeddings.shape
         return self.embeddings
         
     
-    def buildModel(self, clu, window_size):
+    def buildModel(self):
         q_1= Input(shape=(self.q_length,), dtype='int32')
         q_2= Input(shape=(self.q_length,), dtype='int32')    
         
@@ -42,7 +39,7 @@ class ModelBuilder(object):
         lookup_layer_1= lookup(q_1)
         lookup_layer_2= lookup(q_2)
         
-        conv1d=Conv1D(filters=clu, kernel_size=window_size, activation='tanh', padding='same')
+        conv1d=Conv1D(filters=self.clu, kernel_size=self.window_size, activation='tanh', padding='same')
         conv_layer_1=conv1d(lookup_layer_1)
         conv_layer_2=conv1d(lookup_layer_2)
         
@@ -80,16 +77,6 @@ class ModelBuilder(object):
                          epochs=num_epochs,
                          validation_split=0.04,
                          callbacks = [tensorboard, early_stopping])
-        
-    def log_dir_name(self, window_size, clu):
-        # The dir-name for the TensorBoard log-dir.
-        s = "/wind_{0}_clu_{1}/"
-    
-        # Insert all the hyper-parameters in the dir-name.
-        log_dir = s.format(window_size,
-                           clu)
-    
-        return log_dir
 
 
 
