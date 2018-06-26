@@ -81,7 +81,7 @@ def main():
     val_df = pd.read_csv(util.VAL_SET, index_col=0)
     
     train_df = pd.concat([train_df, val_df]) 
-    train_df = train_df[:10000]
+    train_df = train_df[:15000]
 
     print("TRAINING SET...")
     print(train_df.head(5))
@@ -89,6 +89,7 @@ def main():
     with open(util.DICTIONARY_WIKI_10000, 'r') as fp:
         dictionary = json.load(fp)
     dictionary = {k.strip("'"): v for k, v in dictionary.items()}
+    print(list(dictionary.keys())[:10])
     
     read_time=time.clock()-start
     print("TIME TO READ THE DATA: ", read_time)
@@ -108,7 +109,7 @@ def main():
     model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
     model = model_builder.buildModel()
     model_builder.compileModel(model)
-    print(model.summary())
+    #print(model.summary())
     train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
 
     train_time= time.clock()-start

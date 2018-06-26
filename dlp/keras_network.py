@@ -7,7 +7,7 @@ Created on Sun Jun 10 15:31:34 2018
 
 import time
 from keras.models import Model
-from keras.layers import Input,Embedding, Conv2D, Activation, Dot, Lambda, Reshape
+from keras.layers import Input,Embedding, Conv1D, Conv2D, Activation, Dot, Lambda, Reshape
 import keras.backend as K
 import tensorflow as tf
 from keras.callbacks import TensorBoard, EarlyStopping
@@ -40,15 +40,23 @@ class ModelBuilder(object):
         lookup_layer_2= lookup(q_2)
         print("Lookup shape: ", lookup_layer_2.shape)
 
-        expand = Lambda(lambda x: K.expand_dims(x, axis=-1))
+        # q1_emb and q2_emb (?, q_length * embedding)
+        #expand = Lambda(lambda x: K.expand_dims(x, axis=-1))
+        expand = Reshape(target_shape=(self.q_length * self.embedding_size, 1))
         expanded_layer_1 = expand(lookup_layer_1)
         expanded_layer_2 = expand(lookup_layer_2)
         print("Expand shape: ", expanded_layer_1.shape)
-        
-        conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size // 10), activation='tanh', padding='valid')
-        conv_layer_1=conv2d(expanded_layer_1)
-        conv_layer_2=conv2d(expanded_layer_2)
+
+        conv1d = Conv1D(filters=self.clu, kernel_size=self.window_size * self.embedding_size,
+                        strides=self.embedding_size, activation='tanh', padding='valid')
+        conv_layer_1 = conv1d(expanded_layer_1)
+        conv_layer_2 = conv1d(expanded_layer_2)
         print("Conv shape: ", conv_layer_1.shape)
+
+        # conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size), activation='tanh', padding='valid')
+        # conv_layer_1=conv2d(expanded_layer_1)
+        # conv_layer_2=conv2d(expanded_layer_2)
+        # print("Conv shape: ", conv_layer_1.shape)
 
         sum_layer = Lambda(lambda x: K.sum(x,axis=1))
         sum_layer_1=sum_layer(conv_layer_1)
