@@ -63,8 +63,8 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
     return x_1_train, x_2_train, y_train
 
 #Hyperparameters wikipedia
-dim_window_size = Integer(low=2, high=20, name='window_size')
-dim_clu = Integer(low=100, high=400, name='clu')
+dim_window_size = Integer(low=2, high=50, name='window_size')
+dim_clu = Integer(low=200, high=800, name='clu')
 dimensions = [dim_window_size,
               dim_clu]
 
