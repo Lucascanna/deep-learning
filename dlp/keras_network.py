@@ -63,14 +63,14 @@ class ModelBuilder(object):
         sum_layer_2=sum_layer(conv_layer_2)
         print("Sum shape: ", sum_layer_1.shape)
 
-        reshape_layer = Reshape(target_shape=(self.clu,))
-        reshape_layer_1 = reshape_layer(sum_layer_1)
-        reshape_layer_2 = reshape_layer(sum_layer_2)
-        print("Reshape shape: ", reshape_layer_1.shape)
+#        reshape_layer = Reshape(target_shape=(self.clu,))
+#        reshape_layer_1 = reshape_layer(sum_layer_1)
+#        reshape_layer_2 = reshape_layer(sum_layer_2)
+#        print("Reshape shape: ", reshape_layer_1.shape)
 
         activation_layer = Activation('tanh')
-        activation_1= activation_layer(reshape_layer_1)
-        activation_2=activation_layer(reshape_layer_2)
+        activation_1= activation_layer(sum_layer_1)
+        activation_2=activation_layer(sum_layer_2)
         
         similarity_layer= Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
         print("Dot shape: ", similarity_layer.shape)
