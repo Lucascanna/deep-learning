@@ -14,9 +14,8 @@ from keras.callbacks import TensorBoard, EarlyStopping
 
 
 #%%
-
 class ModelBuilder(object):
-    
+
     def __init__(self, embeddings, q_length, clu, window_size):
         super(ModelBuilder, self).__init__()
         self.embeddings=embeddings
@@ -27,10 +26,9 @@ class ModelBuilder(object):
         self.window_size=window_size
 
     def embeddings_initialize(self, shape, dtype=None):
-        assert shape==self.embeddings.shape
+        assert shape == self.embeddings.shape
         return self.embeddings
-        
-    
+
     def buildModel(self):
         q_1= Input(shape=(self.q_length,), dtype='int32')
         q_2= Input(shape=(self.q_length,), dtype='int32')    
@@ -75,15 +73,12 @@ class ModelBuilder(object):
         print("Dot shape: ", similarity_layer.shape)
         
         #predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='float32'), name='predictions')(similarity_layer)
-        
         return Model(inputs=[q_1, q_2], outputs=similarity_layer)
-        
-    
-    def compileModel(self,model):
-        model.compile(loss= 'binary_crossentropy',
+
+    def compileModel(self, model):
+        model.compile(loss='binary_crossentropy',
                       optimizer='adam',
                       metrics=['binary_accuracy'])
-                      
 
     def trainModel(self,model, x_1_train, x_2_train, labels, batch_size, num_epochs):
         sess = tf.Session()
@@ -100,6 +95,20 @@ class ModelBuilder(object):
                          epochs=num_epochs,
                          validation_split=0.04,
                          callbacks = [tensorboard, early_stopping])
+
+    def log_dir_name(self, window_size, clu):
+        # The dir-name for the TensorBoard log-dir.
+        s = "/wind_{0}_clu_{1}/"
+
+        # Insert all the hyper-parameters in the dir-name.
+        log_dir = s.format(window_size,
+                           clu)
+
+        return log_dir
+
+
+
+
 
 
 
