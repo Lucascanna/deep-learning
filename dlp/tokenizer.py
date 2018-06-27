@@ -8,13 +8,14 @@ Created on Wed Jun  6 15:25:52 2018
 from bs4 import BeautifulSoup
 from nltk import word_tokenize
 import re
+import spacy
 
 import dlp.util as util
 
 class Tokenizer(object):
     
     def __init__(self, df):
-        super(Tokenizer, self).__init__()
+        #super(Tokenizer, self).__init__()
         self.soups=[BeautifulSoup(q, 'html5lib') for q in list(df["Text"])]
 
     
@@ -84,20 +85,26 @@ class Tokenizer(object):
         return re.sub(variable, 'thistokenisvariable', soup_text)
     
     
+    def __filter_word(self, token):
+        token=self.__replace_time(token)
+        token=self.__replace_date(token)
+        token=self.__replace_version(token)
+        token=self.__replace_path(token)
+        token=self.__replace_hexadecimal(token)
+        token=self.__replace_variable(token)
+        return token
+    
     def __tokenize_single_soup(self, soup):
         """
         Sanitize and tokenize text of a single soup
         """
         self.__replace_links(soup)
         self.__replace_code(soup)
-        soup_text=soup.get_text().lower()
-        soup_text=self.__replace_time(soup_text)
-        soup_text=self.__replace_date(soup_text)
-        soup_text=self.__replace_version(soup_text)
-        soup_text=self.__replace_path(soup_text)
-        soup_text=self.__replace_hexadecimal(soup_text)
-        soup_text=self.__replace_variable(soup_text)
-        return word_tokenize(soup_text)
+        soup_text=soup.get_text()
+        nlp= spacy.load("en")
+        doc = nlp(soup_text)
+        lemmas = [self.__filter_word(token.lemma_.text) for token in doc if not token.is_stop]
+        return lemmas
         
         
     def tokenize(self):
