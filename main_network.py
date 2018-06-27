@@ -63,8 +63,8 @@ def build_indexes_dataset(df, posts_df, dictionary, q_length):
     return x_1_train, x_2_train, y_train
 
 #Hyperparameters wikipedia
-dim_window_size = Integer(low=2, high=50, name='window_size')
-dim_clu = Integer(low=200, high=800, name='clu')
+dim_window_size = Integer(low=2, high=10, name='window_size')
+dim_clu = Integer(low=150, high=750, name='clu')
 dimensions = [dim_window_size,
               dim_clu]
 
@@ -75,7 +75,6 @@ def fitness(window_size, clu, batch_size=128, num_epochs=150):
     clu = int(clu)
     # Print the hyper-parameters.
     print('window_size:', window_size)
-    print(type(window_size))
     print('clu:', clu)
     print()
     
@@ -85,7 +84,7 @@ def fitness(window_size, clu, batch_size=128, num_epochs=150):
     model = model_builder.buildModel(window_size=window_size,
                          clu=clu)
     model_builder.compileModel(model)
-    log_dir = "./logs/" + model_builder.log_dir_name(window_size, clu)
+    log_dir = "./logs/wiki/" + model_builder.log_dir_name(window_size, clu)
     
     tensorboard = TensorBoard(
         log_dir=log_dir,
@@ -93,7 +92,7 @@ def fitness(window_size, clu, batch_size=128, num_epochs=150):
         write_graph=True,
         write_grads=False,
         write_images=False)
-    early_stopping = EarlyStopping(patience=20)
+    early_stopping = EarlyStopping(patience=10)
    
     history = model.fit(x=[model_builder.x1, model_builder.x2],
                         y=model_builder.y, 
@@ -110,7 +109,7 @@ def fitness(window_size, clu, batch_size=128, num_epochs=150):
 
 
     if accuracy > best_accuracy:
-        model.save("best_model.h5")
+        model.save("dlp/data/best_model.h5")
         best_accuracy = accuracy
 
     del model
@@ -129,7 +128,7 @@ def main():
 #    layer_dict = dict([(layer.name, layer) for layer in model.layers])
 #    embeddings = layer_dict['embedding'].get_weights()[0]
 
-    embeddings = np.loadtxt(util.EMBEDDING_UBUNTU)
+    embeddings = np.loadtxt(util.EMBEDDING_WIKI_10000_200)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -143,7 +142,7 @@ def main():
     print("TRAINING SET...")
     print(train_df.head(5))
     #read the dictionary
-    with open(util.DICTIONARY_UBUNTU, 'r') as fp:
+    with open(util.DICTIONARY_WIKI_10000, 'r') as fp:
         dictionary = json.load(fp)
     dictionary = {k.strip("'"): v for k, v in dictionary.items()}
     print(list(dictionary.keys())[:10])
@@ -154,6 +153,7 @@ def main():
     #hyperparameters
     clu = 600
     window_size = 3
+    default_parameters = [window_size, clu]
     
     print("Computing q_length...")
     q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).mean()
@@ -164,14 +164,22 @@ def main():
     start=time.clock()
 
     global model_builder
-    model_builder = ModelBuilder(embeddings, q_length, clu, window_size)
-    model = model_builder.buildModel()
-    model_builder.compileModel(model)
-    print(model.summary())
-    train_history = model_builder.trainModel(model, x_1_train, x_2_train, y_train, batch_size=128, num_epochs=200)
 
-    train_time= time.clock()-start
+    x_1_train = x_1_train[:15000]
+    x_2_train = x_2_train[:15000]
+    y_train = y_train[:15000]
+    model_builder = ModelBuilder(embeddings, q_length, x_1_train, x_2_train, y_train)
+
+    search_result = gp_minimize(func=fitness,
+                                dimensions=dimensions,
+                                acq_func='EI',  # Expected Improvement.
+                                n_calls=11,
+                                x0=default_parameters)
+    print("Best parameters found: ", search_result.x)
+    print("Validation accuracy: ", -search_result.fun)
+
+    train_time = time.clock() - start
     print("TIME TO TRAIN THE MODEL: ", train_time)
-    print("HISTORY: ", train_history.history)
+    # print("HISTORY: ", train_history.history)
     
 main()

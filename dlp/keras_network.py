@@ -16,27 +16,29 @@ from keras.callbacks import TensorBoard, EarlyStopping
 #%%
 class ModelBuilder(object):
 
-    def __init__(self, embeddings, q_length, clu, window_size):
+    def __init__(self, embeddings, q_length, x_1_train, x_2_train, y_train):
         super(ModelBuilder, self).__init__()
         self.embeddings=embeddings
         self.vocabulary_size=embeddings.shape[0]
         self.embedding_size=embeddings.shape[1]
         self.q_length=q_length
-        self.clu=clu
-        self.window_size=window_size
+        self.x1 = x_1_train
+        self.x2 = x_2_train
+        self.y = y_train
+        #self.clu=clu
+        #self.window_size=window_size
 
     def embeddings_initialize(self, shape, dtype=None):
         assert shape == self.embeddings.shape
         return self.embeddings
 
-    def buildModel(self):
+    def buildModel(self, clu, window_size):
         q_1= Input(shape=(self.q_length,), dtype='int32')
         q_2= Input(shape=(self.q_length,), dtype='int32')    
         
         lookup=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize, trainable=False)
         lookup_layer_1= lookup(q_1)
         lookup_layer_2= lookup(q_2)
-        print("Lookup shape: ", lookup_layer_2.shape)
 
         # q1_emb and q2_emb (?, q_length * embedding)
         #expand = Lambda(lambda x: K.expand_dims(x, axis=-1))
@@ -45,10 +47,9 @@ class ModelBuilder(object):
         #expanded_layer_2 = Reshape(target_shape=(self.q_length * self.embedding_size, 1))(lookup_layer_2)
         #print("Expand shape: ", expanded_layer_1.shape)
 
-        conv1d = Conv1D(filters=self.clu, kernel_size=self.window_size, activation='tanh', padding='valid')
+        conv1d = Conv1D(filters=clu, kernel_size=window_size, activation='tanh', padding='valid')
         conv_layer_1 = conv1d(lookup_layer_1)
         conv_layer_2 = conv1d(lookup_layer_2)
-        print("Conv shape: ", conv_layer_1.shape)
 
         # conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size), activation='tanh', padding='valid')
         # conv_layer_1=conv2d(expanded_layer_1)
@@ -58,7 +59,6 @@ class ModelBuilder(object):
         sum_layer = Lambda(lambda x: K.sum(x,axis=1))
         sum_layer_1=sum_layer(conv_layer_1)
         sum_layer_2=sum_layer(conv_layer_2)
-        print("Sum shape: ", sum_layer_1.shape)
 
         # #reshape_layer = Reshape(target_shape=(self.clu,))
         # reshape_layer_1 = Reshape(target_shape=(self.clu,))(sum_layer_1)
@@ -70,7 +70,6 @@ class ModelBuilder(object):
         activation_2=activation_layer(sum_layer_2)
         
         similarity_layer = Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
-        print("Dot shape: ", similarity_layer.shape)
         
         #predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='float32'), name='predictions')(similarity_layer)
         return Model(inputs=[q_1, q_2], outputs=similarity_layer)
@@ -78,7 +77,7 @@ class ModelBuilder(object):
     def compileModel(self, model):
         model.compile(loss='binary_crossentropy',
                       optimizer='adam',
-                      metrics=['binary_accuracy'])
+                      metrics=['accuracy'])
 
     def trainModel(self,model, x_1_train, x_2_train, labels, batch_size, num_epochs):
         sess = tf.Session()
@@ -98,7 +97,7 @@ class ModelBuilder(object):
 
     def log_dir_name(self, window_size, clu):
         # The dir-name for the TensorBoard log-dir.
-        s = "/wind_{0}_clu_{1}/"
+        s = "wind_{0}_clu_{1}/"
 
         # Insert all the hyper-parameters in the dir-name.
         log_dir = s.format(window_size,
