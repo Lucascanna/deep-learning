@@ -14,9 +14,8 @@ from keras.callbacks import TensorBoard, EarlyStopping
 
 
 #%%
-
 class ModelBuilder(object):
-    
+
     def __init__(self, embeddings, q_length, clu, window_size):
         super(ModelBuilder, self).__init__()
         self.embeddings=embeddings
@@ -27,10 +26,9 @@ class ModelBuilder(object):
         self.window_size=window_size
 
     def embeddings_initialize(self, shape, dtype=None):
-        assert shape==self.embeddings.shape
+        assert shape == self.embeddings.shape
         return self.embeddings
-        
-    
+
     def buildModel(self):
         q_1= Input(shape=(self.q_length,), dtype='int32')
         q_2= Input(shape=(self.q_length,), dtype='int32')    
@@ -42,15 +40,14 @@ class ModelBuilder(object):
 
         # q1_emb and q2_emb (?, q_length * embedding)
         #expand = Lambda(lambda x: K.expand_dims(x, axis=-1))
-        expand = Reshape(target_shape=(self.q_length * self.embedding_size, 1))
-        expanded_layer_1 = expand(lookup_layer_1)
-        expanded_layer_2 = expand(lookup_layer_2)
-        print("Expand shape: ", expanded_layer_1.shape)
+        #expand = Reshape(target_shape=(self.q_length * self.embedding_size, 1))
+        #expanded_layer_1 = Reshape(target_shape=(self.q_length * self.embedding_size, 1))(lookup_layer_1)
+        #expanded_layer_2 = Reshape(target_shape=(self.q_length * self.embedding_size, 1))(lookup_layer_2)
+        #print("Expand shape: ", expanded_layer_1.shape)
 
-        conv1d = Conv1D(filters=self.clu, kernel_size=self.window_size * self.embedding_size,
-                        strides=self.embedding_size, activation='tanh', padding='valid')
-        conv_layer_1 = conv1d(expanded_layer_1)
-        conv_layer_2 = conv1d(expanded_layer_2)
+        conv1d = Conv1D(filters=self.clu, kernel_size=self.window_size, activation='tanh', padding='valid')
+        conv_layer_1 = conv1d(lookup_layer_1)
+        conv_layer_2 = conv1d(lookup_layer_2)
         print("Conv shape: ", conv_layer_1.shape)
 
         # conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size), activation='tanh', padding='valid')
@@ -68,23 +65,21 @@ class ModelBuilder(object):
 #        reshape_layer_2 = reshape_layer(sum_layer_2)
 #        print("Reshape shape: ", reshape_layer_1.shape)
 
+
         activation_layer = Activation('tanh')
         activation_1= activation_layer(sum_layer_1)
         activation_2=activation_layer(sum_layer_2)
         
-        similarity_layer= Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
+        similarity_layer = Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
         print("Dot shape: ", similarity_layer.shape)
         
         #predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='float32'), name='predictions')(similarity_layer)
-        
         return Model(inputs=[q_1, q_2], outputs=similarity_layer)
-        
-    
-    def compileModel(self,model):
-        model.compile(loss= 'binary_crossentropy',
+
+    def compileModel(self, model):
+        model.compile(loss='binary_crossentropy',
                       optimizer='adam',
-                      metrics=['accuracy'])
-                      
+                      metrics=['binary_accuracy'])
 
     def trainModel(self,model, x_1_train, x_2_train, labels, batch_size, num_epochs):
         sess = tf.Session()
@@ -101,6 +96,20 @@ class ModelBuilder(object):
                          epochs=num_epochs,
                          validation_split=0.04,
                          callbacks = [tensorboard, early_stopping])
+
+    def log_dir_name(self, window_size, clu):
+        # The dir-name for the TensorBoard log-dir.
+        s = "/wind_{0}_clu_{1}/"
+
+        # Insert all the hyper-parameters in the dir-name.
+        log_dir = s.format(window_size,
+                           clu)
+
+        return log_dir
+
+
+
+
 
 
 
