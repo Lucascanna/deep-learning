@@ -50,15 +50,17 @@ def main():
     print("Training and validating the model...")
     start=time.clock()
     
+    target_train = target_train[:128]
+    context_train = context_train[:128]
     #train and validate the model
     [model, validation_model] = word_embedding.buildmodel()
     model = word_embedding.compileModel(model)
     history = word_embedding.trainModel(model, validation_model, reversed_dictionary, 
-                                        target_train, context_train, labels_train, batch_size=128, num_epochs=200000)
+                                        target_train, context_train, labels_train, batch_size=128, num_epochs=1)
     
     train_time= time.clock()-start
     print("TIME TO TRAIN THE MODEL: ", train_time)
-    #print("HISTORY: ", history.history)
+    print("HISTORY: ", history.history)
     
 main()
     
