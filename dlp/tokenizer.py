@@ -9,34 +9,44 @@ from bs4 import BeautifulSoup
 from nltk import word_tokenize
 import re
 import spacy
+from spacy.tokenizer import Tokenizer 
+from spacy.pipeline import Pipe
+from selectolax.parser import HTMLParser
+from lxml import etree
 
 import dlp.util as util
 
-class Tokenizer(object):
+class TokenizerPosts(object):
     
     def __init__(self, df):
         #super(Tokenizer, self).__init__()
-        self.soups=[BeautifulSoup(q, 'html5lib') for q in list(df["Text"])]
+        self.soups=list(df["Text"])
 
     
-    def __replace_links(self, soup):
-        """
-        Replace the links of a single soup with a unique string
-        """
-        for link in soup.find_all('a'):
-            link.string='thistokenisalink'
-        #return soup
+#    def __replace_links(self, soup):
+#        """
+#        Replace the links of a single soup with a unique string
+#        """
+#        for link in soup.find_all('a'):
+#            link.string='thistokenisalink'
+#        #return soup
     
     
     def __replace_code(self, soup):
         """
         Replace the code of a single soup with a unique string
         """
-        for code in soup.find_all('code'):
-            code.string='thistokeniscode'
-        #return soup
+        code=re.compile(util.CODE)
+        return re.sub(code, 'thistokeniscode', soup)
     
-    
+    def __deletenochar(self, soup):
+        """
+        Delete any no char as \n, \t, .. 
+        """
+        nochar = re.compile(util.NOCHAR)
+        return re.sub(nochar, '', soup)
+
+
     def __replace_time(self, soup_text):
         """
         Replace the time format in the text of a single soup with a unique string
@@ -86,29 +96,51 @@ class Tokenizer(object):
     
     
     def __filter_word(self, token):
+        
         token=self.__replace_time(token)
         token=self.__replace_date(token)
         token=self.__replace_version(token)
         token=self.__replace_path(token)
         token=self.__replace_hexadecimal(token)
         token=self.__replace_variable(token)
+
         return token
     
     def __tokenize_single_soup(self, soup):
         """
         Sanitize and tokenize text of a single soup
         """
-        self.__replace_links(soup)
-        self.__replace_code(soup)
-        soup_text=soup.get_text()
-        nlp= spacy.load("en")
-        doc = nlp(soup_text)
-        lemmas = [self.__filter_word(token.lemma_.text) for token in doc if not token.is_stop]
-        return lemmas
+        #self.__replace_links(soup)
+        soup = self.__replace_code(soup)
+        soup = self.__deletenochar(soup)
+        root= etree.fromstring(soup, etree.HTMLParser())
+        soup_text=(' '.join(root.xpath("//text()")))
+#        nlp= spacy.load("en")
+#        #nlp.remove_pipe('parser')
+#        nlp.remove_pipe('ner')
+#        nlp.remove_pipe('tagger')
+#        tokenizer = Tokenizer(nlp.vocab)
+#        #
+#        lemmas = [self.__filter_word(doc.lemma_)  for doc in nlp(soup_text) if not (doc.is_punct or 
+#                                      doc.dep_==('det' or 'aux' or 'poss' or 'prep' or 'nsubj' or 'nsubjpass' or 'dobj'))]
+#        #lemmas = [(doc, doc.dep_)  for doc in nlp(soup_text) if (doc.is_stop)]
+#        return lemmas
+        return soup_text
         
         
     def tokenize(self):
         """
         Return the list of sanitized text of all the soups
         """
-        return [self.__tokenize_single_soup(soup) for soup in self.soups]
+        docs = [self.__tokenize_single_soup(soup) for soup in self.soups]
+        nlp= spacy.load("en")
+        #nlp.remove_pipe('parser')
+        nlp.remove_pipe('ner')
+        nlp.remove_pipe('tagger')
+        documents = []
+        for d in nlp.pipe(docs):
+            lemmas = [self.__filter_word(doc.lemma_) for doc in d if not (doc.is_punct or doc.dep_==('det' or 'aux' or 'poss' or 'prep' or 'nsubj' or 'nsubjpass' or 'dobj'))]
+            documents.append(lemmas)
+        
+        return documents
+    
