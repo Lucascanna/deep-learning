@@ -84,7 +84,7 @@ def fitness(window_size, clu, batch_size=128, num_epochs=150):
     model = model_builder.buildModel(window_size=window_size,
                          clu=clu)
     model_builder.compileModel(model)
-    log_dir = "./logs/wiki/" + model_builder.log_dir_name(window_size, clu)
+    log_dir = "./logs/gensim2/" + model_builder.log_dir_name(window_size, clu)
     
     tensorboard = TensorBoard(
         log_dir=log_dir,
@@ -128,7 +128,7 @@ def main():
 #    layer_dict = dict([(layer.name, layer) for layer in model.layers])
 #    embeddings = layer_dict['embedding'].get_weights()[0]
 
-    embeddings = np.loadtxt(util.EMBEDDING_WIKI_10000_200)
+    embeddings = np.loadtxt(util.EMBEDDING_GENSIM_10000_200)
     
     #read train, test and validation set
     posts_df= pd.read_csv(util.TOKENIZED_POSTS, index_col=0, converters={"Tokens": lambda x: x.strip("[]").replace("'","").split(", ")})   
@@ -142,7 +142,7 @@ def main():
     print("TRAINING SET...")
     print(train_df.head(5))
     #read the dictionary
-    with open(util.DICTIONARY_WIKI_10000, 'r') as fp:
+    with open(util.DICTIONARY_GENSIM_10000, 'r') as fp:
         dictionary = json.load(fp)
     dictionary = {k.strip("'"): v for k, v in dictionary.items()}
     print(list(dictionary.keys())[:10])
@@ -156,30 +156,60 @@ def main():
     default_parameters = [window_size, clu]
     
     print("Computing q_length...")
+    print(posts_df['Tokens'].iloc[:10].apply(lambda x : len(x)))
     q_length = posts_df['Tokens'].loc[train_df['Post1Id'].tolist() + train_df['Post2Id'].tolist()].apply(lambda x : len(x)).mean()
     q_length = int(round(q_length))
     x_1_train, x_2_train, y_train = build_indexes_dataset(train_df, posts_df, dictionary, q_length)
-    
+
+
     print("Training and validating the model...")
     start=time.clock()
 
     global model_builder
 
-    x_1_train = x_1_train[:15000]
-    x_2_train = x_2_train[:15000]
-    y_train = y_train[:15000]
+    x_1_train = x_1_train[:128]
+    x_2_train = x_2_train[:128]
+    y_train = y_train[:128]
     model_builder = ModelBuilder(embeddings, q_length, x_1_train, x_2_train, y_train)
+    # search_result = gp_minimize(func=fitness,
+    #                             dimensions=dimensions,
+    #                             acq_func='EI',  # Expected Improvement.
+    #                             n_calls=11,
+    #                             x0=default_parameters)
+    # print("Best parameters found: ", search_result.x)
+    # print("Validation accuracy: ", -search_result.fun)
 
-    search_result = gp_minimize(func=fitness,
-                                dimensions=dimensions,
-                                acq_func='EI',  # Expected Improvement.
-                                n_calls=11,
-                                x0=default_parameters)
-    print("Best parameters found: ", search_result.x)
-    print("Validation accuracy: ", -search_result.fun)
+    model = model_builder.buildModel(window_size=window_size,
+                                     clu=clu)
+    model_builder.compileModel(model)
+    print(model.summary())
+    print()
+    log_dir = "./logs/gensim/" + model_builder.log_dir_name(window_size, clu)
+
+    tensorboard = TensorBoard(
+        log_dir=log_dir,
+        histogram_freq=0,
+        write_graph=True,
+        write_grads=False,
+        write_images=False)
+    early_stopping = EarlyStopping(patience=10)
+
+    history = model.fit(x=[model_builder.x1, model_builder.x2],
+                        y=model_builder.y,
+                        batch_size=128,
+                        epochs=120,
+                        validation_split=0.04,
+                        callbacks=[tensorboard, early_stopping])
+
+    accuracy = max(history.history['val_acc'])
+
+    print()
+    print("Accuracy: {0:.2%}".format(accuracy))
+    print()
 
     train_time = time.clock() - start
     print("TIME TO TRAIN THE MODEL: ", train_time)
     # print("HISTORY: ", train_history.history)
+
     
 main()

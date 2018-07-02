@@ -24,11 +24,14 @@ DICTIONARY_WIKI_full = "dlp/data/dictionary_wiki_full.json"
 DICTIONARY_WIKI_10000 = "dlp/data/dictionary_wiki_10000.json"
 EMBEDDING_WIKI_10000_200 = "dlp/data/embedding_wiki_10000_200.csv"
 
+DICTIONARY_GENSIM_10000 = "dlp/data/dictionary_gensim_10000.json"
+EMBEDDING_GENSIM_10000_200 = "dlp/data/embedding_gensim_10000_200.csv"
+
 # DEFINITION OF RE
 
 TIME= r'([0-1]?\d|2[0-3])(?::([0-5]?\d))+'
 DATE= r'\d\d(\d\d)?(-|/)\d\d(-|/)\d\d(\d\d)?'
 VERSION= r'(\d+\.\d+(.\d+)*)|(\S*\d+\S*)+'
-PATH= r'(~|\w*|.)?(/\S*)+'
+PATH= r'(~|\w*|.))?(/\S*)+'
 HEXADECIMAL= r'0x[0-9a-fA-F]+'
 VARIABLE= r'([a-zA-Z0-9]*_+[a-zA-Z0-9]*)+'
