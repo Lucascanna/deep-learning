@@ -2,7 +2,6 @@
 
 ## TODO
 - approccio lstm
-- question length: media matteucci style
 - risultati ufficiali con entrambi gli embeddings
 
 ## IDEE da Related Work
