@@ -2,7 +2,6 @@
 
 ## TODO
 - approccio lstm
-- migliorare embeddings
 - risultati ufficiali con entrambi gli embeddings
 
 ## IDEE da Related Work
