@@ -45,7 +45,7 @@ def main():
     [target_test, context_test, labels_test] = word_embedding.generate_samples(data_test)
     
     preprocess_time= time.clock()-start
-    print("TIME TO PREPROCESS DATA: ", preprocess_time)
+    print("TIME TO PREPREOCESS DATA: ", preprocess_time)
     
     print("Training and validating the model...")
     start=time.clock()

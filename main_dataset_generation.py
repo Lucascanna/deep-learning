@@ -15,7 +15,7 @@ from dlp.data_filter import XMLDataFilter
 from dlp.data_parser import XMLtoPandasParser
 from dlp.non_dup_generator import NonDupGenerator
 from dlp.train_test_val_generation import TrainTestValGenerator
-from dlp.tokenizer import TokenizerPosts
+from dlp.tokenizer import Tokenizer
 
 def drop_inconsistent_links(posts_df, links_df):
     cond1 = pd.isnull(posts_df.loc[links_df['Post1Id'].values]['Tokens'].values)
@@ -24,16 +24,15 @@ def drop_inconsistent_links(posts_df, links_df):
     return links_df[cond]
 
 def main():
-    """
+    
     global posts_df
     global dup_df
     dup_df.columns=['isDuplicate', 'Post1Id', 'Post2Id']
     if type(posts_df.index) == pd.RangeIndex: 
         posts_df.set_index('Id', inplace=True)
-    """
     print("Loading data...")
     start = time.clock()
-    
+    """
     #laod the data as xml objects
     xml_loader = XMLDataLoader()
     posts_root = xml_loader.load_posts()
@@ -48,7 +47,7 @@ def main():
     xml_to_pandas_parser = XMLtoPandasParser()
     posts_df = xml_to_pandas_parser.to_dataframe_posts(posts_root)
     dup_df = xml_to_pandas_parser.to_dataframe_links(links_root)
-    
+    """
     load_time = time.clock() - start
     print("TIME TO LOAD AND PREPROCESS THE DATA: ", load_time)
     
@@ -57,12 +56,8 @@ def main():
     start=time.clock()
     print("Tokenizing text..")
     
-    inizio = time.clock()
-    tokenizer = TokenizerPosts(posts_df)
-    posts_df['Tokens'] = tokenizer.tokenize()
-    fine = time.clock()
-    print('tempo per un post: ', fine-inizio )
-
+    tokenizer = Tokenizer(posts_df)
+    posts_df["Tokens"] = tokenizer.tokenize()
     
     tokenization_time= time.clock() - start
     print("TIME TO TOKENIZE THE TEXT: ", tokenization_time)
