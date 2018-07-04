@@ -111,10 +111,7 @@ $\vec{z}_n = [\vec{r}^{w_{n-(k-1)/2}},..., \vec{r}^{w_n}, ...,\vec{r}^{w_{n+(k-1
 The convolutional layer computes the $j$-th element of the vector $\vec{r}_{q1} \in \mathbb{R}^{cl_u}$ as follows: 
 \begin{equation}
 [\vec{r}_{q1}]_j = f \left( \sum_{1<n<N}[f(W^1 z_n + b^1)]_j \right)
-<<<<<<< HEAD
-=======
 \label{eq:conv}
->>>>>>> 60479f36b37b077604e7e0609034d520b7866b9b
 \end{equation}•
 where $W^1 \in \mathbb{R}^{cl_u \times dk}$ is the weight matrix of the convolutional layer and $f$ is the hyperbolic tangent function. The same matrix is used to extract local features around each word window of the given question. The global fixed-sized feature vector for the question is obtained by using the sum over all word windows.\\
 Matrix $W^1$ and vector $b^1$ are parameters to be learned. The number of convolutional units $cl_u$ (which corresponds to the size of the question representation), and the size of the word context window $k$ are hyper-parameters to be tuned. 
@@ -160,8 +157,10 @@ After applying vertically the sum operation to the output of this layer, the res
 %------------------------------------------------------------------------
 \section{Experiments}
 
-
 \paragraph{Datasets.}
+Our dataset is from Ask Ubuntu Community Questions and Answers site \footnote{http://askubuntu.com}. Ask Ubuntu is a community for Ubuntu users and developers, and it is part of the Stack Exchange Q\&A communities. The users of these communities can ask and answer ques- tions, and vote up and down both questions and answers. Users with high reputation become moderators and can label a new question as a duplicate to an existing question. Usually it takes five votes from different moderators to close a question or to mark it as a duplicate. 
+We use Ask Ubuntu data dump \footnote{ \url{https://archive.org/download/stackexchange}} provided in April 2018, that contains posts from 2010 to March 2018. From the data dump we have selected only the posts that are questions, the amount of questions is 285651. We extract all question pairs linked as duplicated and from those we consider only 15500 pairs in order to be able to compare the obtained results with the ones from the paper \cite{bogdanova2015detecting}. Afterward we have randomly generated the same number of non duplicate pair of posts. \\
+For our experiments, we divide the dataset in the same way of the paper \cite{bogdanova2015detecting}: 24K pairs for the training set, 6K pairs for the test set and 1K pairs for the validation set.
 
 \paragraph{Tokenization.}
 Tokenization is the process of breaking up a given text, in this case every question, into units called tokens. The tokens may be words or number or punctuation mark: we decide to consider only words and to disregard those tokens that are punctuation, symbols, tabulation, white spaces, articles and prepositions.
