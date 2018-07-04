@@ -14,3 +14,7 @@
 *.txt
 logs/*
 *.h5
+*.aux
+*.log
+paper/paper_final.synctex.gz
+*.gz
