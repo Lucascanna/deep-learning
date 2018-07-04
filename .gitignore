@@ -17,4 +17,4 @@ logs/*
 *.aux
 *.log
 paper/paper_final.synctex.gz
-*.gz
+

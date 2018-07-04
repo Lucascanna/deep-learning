@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{svg}
 
 % Include other packages here, before hyperref.
 
@@ -49,7 +50,7 @@ Politecnico di Milano\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-   In the context of online forums, although two questions may seem very different in terms of vocabulary, length and syntax, they may eventually ask the same thing. In this work, we try to detect semantically equivalent questions using a simple Convolutional Neural Network (CNN). The proposed CNN generates distributed vector representations \cite{mikolov2013distributed} for pairs of questions and score them using a similarity metric. We evaluate in-domain \emph{word embeddings} versus the ones trained by Google using all the English Wikipedia \footnote{\url{http://nlp.stanford.edu/data/glove.6B.zip}}: in the former case, the experimental results are very close to the paper \cite{bogdanova2015detecting} we are trying to replicate, while in the latter case they are a bit worse. In particular, in-domain word embeddings do not bring any improvement to the performances as they do in the Bogdanova's work.
+   In the context of online forums, although two questions may seem very different in terms of vocabulary, length and syntax, they may eventually ask the same thing. In this work, we try to detect semantically equivalent questions using a simple Convolutional Neural Network (CNN). The proposed CNN generates distributed vector representations for pairs of questions and score them using a similarity metric. This work is the replication of \cite{bogdanova2015detecting}: we basically try to perform the same experiments and compare our results with theirs. The replication turned to be not straightforward since some crucial implementation details are missing in the Bogdanova et al.'s description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following three aspects that were not explicitly treated in the paper: unequal text length, the type of convolution and the training of in-domain word embeddings. The final results we obtained are quite close to the our target; whereas the optimal parameters values of the network are quite different from \cite{bogdanova2015detecting}.
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
@@ -57,14 +58,16 @@ Politecnico di Milano\\
 \section{Introduction}
 Natural Language Processing (NLP) is just one of several fields emerging from Artificial Intelligence. In NLP we want the machine to process and analyze large amount of natural language data to accomplish very interesting tasks (such as Sentiment Analysis, Language Identification and many others). Nowadays, these tasks are plenty and many works on them has been already carried out \footnote{Here is a very interesting repository collecting several NLP tasks along with their main references: \\ \url{https://github.com/Kyubyong/nlp_tasks}}. In this paper, we focus on the task of predicting whether two questions from an online forum are semantically equivalent, i.e. they can be answered by the exact same answer. This can be a very useful tool for Question-Answering community sites as they typically want to keep their databases as less redundant as possible, so to make the searches of their users both faster and more effective. Furthermore, they want to keep people from wasting their time in answering already solved questions. \\
 The main contribution of this work is \cite{bogdanova2015detecting}. In their work, Bogdanova et al. propose a simple Convolutional Neural Network (CNN) to detect semantically equivalent questions. The proposed network first transforms words into \emph{word embeddings} and then applies a convolutional layer which generates question-wide vectors representations. Finally, pairs of questions are scored using a similarity function. The most interesting experimental result is the evaluation of in-domain word embeddings versus the word embeddings generated using all of the English Wikipedia. In particular, they shown that domain-specific word embeddings achieve higher performances. \\
-In general, the results obtained by our implementation are very close to the ones of the replicated paper. The only shortcoming was that the in-domain word embeddings trained by us did not improve the performances as they did in Bogdnova et al.'s work. We think this is due to the fact that, since the paper does not provide any description of the model employed to train the domain-specific word-embedddings, it is very likely that our model is significantly different from the one they used.\\
+
+In general, the results obtained by our implementation are very close to the ones of the replicated paper. Surprisingly, as we will discuss in Section 4, the main differences in the results are about the optimal hyper-parameter values of the network.\\
 The authors of the paper accurately described the architecture of the network, but many crucial details of the model are missing in their description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following three aspects that were not explicitly treated in the paper: 
     \paragraph{Handling questions of different sizes.}
-    Bogdanova et al. explicitly state that the different sizes of questions is one of the main challenges of their work. Nevertheless, they do not specify the way they solved this issue. We, therefore, tried to experiment two different solutions: fixing the length of each question to the \textbf{maximum} and the \textbf{mean} length of the questions.The second approach resulted to yield the greater accuracy.
+    Bogdanova et al. explicitly state that the different sizes of questions is one of the main challenges of their work. Nevertheless, they do not specify the way they solved this issue. We, therefore, tried to fix the length of each question to the \textbf{maximum} and to the \textbf{mean} length of all the questions. The first approach resulted to yield the greater accuracy.
     \paragraph{The type of convolution.}
     For the implementation of our network we used a 1-dimensional convolution. Indeed, text can be seen as images with the input maps having only one dimension (height, without width) corresponding to the question length and where the number of input maps is nothing but the size of the word embeddings. The type of convolution represents another missing detail of \cite{bogdanova2015detecting}.    
     \paragraph{The training of in-domain word embeddings.}
-    The paper does not provide any information about the model used to train in-domain word embeddings. Therefore, we based our work on a very good tutorial \footnote{\url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}} on how to build a the \emph{word2vec} model \cite{mikolov2013distributed} in Keras. However, the experimental results concerning this aspect of our work were not very satisfactory.
+    The paper does not provide any information about the model used to train in-domain word embeddings. Initially, we tried to build our own \emph{word2vec} model \cite{mikolov2013distributed} to generate word-embeddings using as training data the same dataset used to train the main network \footnote{To do so we followed this good tutorial: \url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}}. However, the training of this network turned out to be very slow and resulting embeddings perfomed poorly. \\
+    We, then, decided to use Gensim, a very simple library which generates word-embeddings given the training data. The resulting embeddings performed very well, allowing the main network to achieve up to 90\% of accuracy on the validation set.
 
 %------------------------------------------------------------------------
 \section{Related work}
@@ -108,6 +111,10 @@ $\vec{z}_n = [\vec{r}^{w_{n-(k-1)/2}},..., \vec{r}^{w_n}, ...,\vec{r}^{w_{n+(k-1
 The convolutional layer computes the $j$-th element of the vector $\vec{r}_{q1} \in \mathbb{R}^{cl_u}$ as follows: 
 \begin{equation}
 [\vec{r}_{q1}]_j = f \left( \sum_{1<n<N}[f(W^1 z_n + b^1)]_j \right)
+<<<<<<< HEAD
+=======
+\label{eq:conv}
+>>>>>>> 60479f36b37b077604e7e0609034d520b7866b9b
 \end{equation}•
 where $W^1 \in \mathbb{R}^{cl_u \times dk}$ is the weight matrix of the convolutional layer and $f$ is the hyperbolic tangent function. The same matrix is used to extract local features around each word window of the given question. The global fixed-sized feature vector for the question is obtained by using the sum over all word windows.\\
 Matrix $W^1$ and vector $b^1$ are parameters to be learned. The number of convolutional units $cl_u$ (which corresponds to the size of the question representation), and the size of the word context window $k$ are hyper-parameters to be tuned. 
@@ -137,6 +144,16 @@ The experimental results show that the \emph{max} approach provides the best per
 %-------------------------------------------------------------------------
 \subsection{Type of convolution}
 
+To implement the convolution described in Section 3.1.2., we decided to use a 1-dimensional convolutional layer. The reason behind this choice is that, as images are seen as three input maps (R,G,B) where each map is a 2-dimensional array (matrix) with height and width, similarly text can be seen as $d$ input maps where each map has only one dimension which is the length of the question. This interpretation of the 1-dimensional convolution is exemplified in Figure \ref{fig:conv}.\\
+After applying vertically the sum operation to the output of this layer, the resulting vector is exactly the one described by Equation \ref{eq:conv}    
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.8\linewidth]{img/conv1d.jpg}
+\end{center}
+\caption{The 1-dimensional convolution.}
+\label{fig:conv}
+\end{figure}
 %-------------------------------------------------------------------------
 \subsection{In-domain Word Embeddings}    
 
