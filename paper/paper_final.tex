@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{svg}
 
 % Include other packages here, before hyperref.
 
@@ -109,6 +110,7 @@ $\vec{z}_n = [\vec{r}^{w_{n-(k-1)/2}},..., \vec{r}^{w_n}, ...,\vec{r}^{w_{n+(k-1
 The convolutional layer computes the $j$-th element of the vector $\vec{r}_{q1} \in \mathbb{R}^{cl_u}$ as follows: 
 \begin{equation}
 [\vec{r}_{q1}]_j = f \left( \sum_{1<n<N}[f(W^1 z_n + b^1)]_j \right)
+\label{eq:conv}
 \end{equation}•
 where $W^1 \in \mathbb{R}^{cl_u \times dk}$ is the weight matrix of the convolutional layer and $f$ is the hyperbolic tangent function. The same matrix is used to extract local features around each word window of the given question. The global fixed-sized feature vector for the question is obtained by using the sum over all word windows.\\
 Matrix $W^1$ and vector $b^1$ are parameters to be learned. The number of convolutional units $cl_u$ (which corresponds to the size of the question representation), and the size of the word context window $k$ are hyper-parameters to be tuned. 
@@ -137,7 +139,16 @@ To keep the architecture of our network as simpler as possible we decided to app
 The experimental results show that the \emph{max} approach provides the best performances. This is probably due to the fact that the \emph{mean} approach is very likely to drop important semantic information from the sentence. It is worth mentioning that, in order for the \emph{max} approach to perform at its best, it can be a good choice dropping the outliers, i.e. the questions that are too long with respect to the other observations.
 %-------------------------------------------------------------------------
 \subsection{Type of convolution}
+To implement the convolution described in Section 3.1.2., we decided to use a 1-dimensional convolutional layer. The reason behind this choice is that, as images are seen as three input maps (R,G,B) where each map is a 2-dimensional array (matrix) with height and width, similarly text can be seen as $d$ input maps where each map has only one dimension which is the length of the question. This interpretation of the 1-dimensional convolution is exemplified in Figure \ref{fig:conv}.\\
+After applying vertically the sum operation to the output of this layer, the resulting vector is exactly the one described by Equation \ref{eq:conv}    
 
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.8\linewidth]{img/conv1d.jpg}
+\end{center}
+\caption{The 1-dimensional convolution.}
+\label{fig:conv}
+\end{figure}
 %-------------------------------------------------------------------------
 \subsection{In-domain Word Embeddings}    
 
