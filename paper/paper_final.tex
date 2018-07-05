@@ -50,7 +50,7 @@ Politecnico di Milano\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-   In the context of online forums, although two questions may seem very different in terms of vocabulary, length and syntax, they may eventually ask the same thing. In this work, we try to detect semantically equivalent questions using a simple Convolutional Neural Network (CNN). The proposed CNN generates distributed vector representations for pairs of questions and score them using a similarity metric. This work is the replication of \cite{bogdanova2015detecting}: we basically try to perform the same experiments and compare our results with theirs. The replication turned to be not straightforward since some crucial implementation details are missing in the Bogdanova et al.'s description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following three aspects that were not explicitly treated in the paper: unequal text length, the type of convolution and the training of in-domain word embeddings. The final results we obtained are quite close to the our target; whereas the optimal parameters values of the network are quite different from \cite{bogdanova2015detecting}.
+   In the context of online forums, although two questions may seem very different in terms of vocabulary, length and syntax, they may eventually ask the same thing. In this work, we try to detect semantically equivalent questions using a simple Convolutional Neural Network (CNN). The proposed CNN generates distributed vector representations for pairs of questions and score them using a similarity metric. This work is the replication of \cite{bogdanova2015detecting}: we basically try to perform the same experiments and compare our results with theirs. The replication turned to be not straightforward since some crucial implementation details are missing in the Bogdanova et al.'s description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following three aspects that were not explicitly treated in the paper: unequal text length, the type of convolution and the training of in-domain word embeddings. The final results we obtained are quite close to the our target; whereas the optimal parameters values of the network are quite different from \cite{bogdanova2015detecting}. It is worth clarifying that, since we used domain-specific data for both training and testing the model, the obtained performances are guaranteed to hold only for pairs of questions coming from that specific domain.
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
@@ -66,7 +66,7 @@ The authors of the paper accurately described the architecture of the network, b
     \paragraph{The type of convolution.}
     For the implementation of our network we used a 1-dimensional convolution. Indeed, text can be seen as images with the input maps having only one dimension (height, without width) corresponding to the question length and where the number of input maps is nothing but the size of the word embeddings. The type of convolution represents another missing detail of \cite{bogdanova2015detecting}.    
     \paragraph{The training of in-domain word embeddings.}
-    The paper does not provide any information about the model used to train in-domain word embeddings. Initially, we tried to build our own \emph{word2vec} model \cite{mikolov2013distributed} to generate word-embeddings using as training data the same dataset used to train the main network \footnote{To do so we followed this good tutorial: \url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}}. However, the training of this network turned out to be very slow and resulting embeddings perfomed poorly. \\
+    The paper does not provide any information about the model used to train in-domain word embeddings. Initially, we tried to build our own \emph{word2vec} model \cite{mikolov2013distributed} to generate word-embeddings using as training data the same dataset used to train the main network \footnote{To do so we followed this good tutorial: \url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}}. However, the training of this network turned out to be very slow and resulting embeddings performed poorly. \\
     We, then, decided to use Gensim, a very simple library which generates word-embeddings given the training data. The resulting embeddings performed very well, allowing the main network to achieve up to 90\% of accuracy on the validation set.
 
 %------------------------------------------------------------------------
@@ -97,20 +97,20 @@ As detailed in Figure \ref{fig:network}, the input for the network is tokenized 
 The first layer of the network transforms words into representations that capture syntactic and semantic information about the words. The initialization of this layer requires two strictly correlated objects:
 \begin{itemize}
 \item \textbf{The vocabulary}: a dictionary $V$ associating each word of the corpora used to train the embeddings to an integer index. In this vocabulary, we must also reserve an index for all the words which are not present in the vocabulary. Best practices suggest to have the index $0$ for the \emph{unknown} words and then having the other indexes ordered by most common words.
-\item \textbf{The pre-trained word-embeddings}: a matrix $W_0 \in \mathbb{R}^{|V| \times d}$ where $d$ is the size the word embeddings. In this matrix, the $i$-th row corresponds to the word embedding of the $i$-th word in the vocabulary.
+\item \textbf{The pre-trained word-embeddings}: a matrix $W_0 \in \mathbb{R}^{|V| \times d}$ where $d$ is the size of the word embeddings. In this matrix, the $i$-th row corresponds to the word embedding of the $i$-th word in the vocabulary.
 \end{itemize}•
 The input of this layer is a 1-dimensional vector $\vec{q}=[w_1, w_2, ... , w_N]$ where the element $w_i$ is an integer number corresponding to the index of the $i$-th word of the question. We initialize the layer with our pre-trained word embeddings \footnote{either the word embeddings trained by us or the those trained by Google}, which is the matrix $W_0$. This layer, for each index $w_i$ of the input vector, retrieves the corresponding vector representation $\vec{r}^{w_i}$ in matrix $W_0$. Hence, the output is a matrix $X_0 \in \mathbb{R}^{N \times d}$.\\
-Notice that if we use pre-trained word embeddings, the values of both the $d$ and $|V|$ have been already decided. These two hyper-parameters should have been tuned by people who trained the matrix $W_0$. Therefore, we will discuss them later when we will describe the training of in-domain word embeddings.  Even the question length $N$ is something that will be treated later on.
+Notice that using pre-trained word embeddings, implies that the values of both the $d$ and $|V|$ have been already decided by those who trained the matrix $W_0$.
 
 \subsubsection{The convolution}
 We use a convolutional layer to compute the question-wide distributed vector representations $\vec{r}_{q1}$ and $\vec{r}_{q2}$. For each question, the convolutional layer first produces local features around each word in the question. Then, it combines these local features using a sum operation to create a fixed-sized feature vector (representation) for the question.\\
-Given a question $q$, the convolutional layer applies a matrix-vector operation to each window of size $k$ of successive windows in $\vec{q}_{emb} = [\vec{r}^{w_1},\vec{r}^{w_2}, ..., \vec{r}^{w_N}]$. Let us define the vector $\vec{z}_n \in \mathbb{R}^{dk}$ as the concatenation of a sequence of $k$ word embeddings, centralized in the $n$-th word:
+Given a question $q$, the convolutional layer applies a matrix-vector operation to each window of size $k$ of successive windows in $\vec{q}_{emb} = [\vec{r}^{w_1},\vec{r}^{w_2}, ..., \vec{r}^{w_N}]$. Let us define the vector $\vec{z}_n \in \mathbb{R}^{dk}$ as the concatenation of a sequence of $k$ word embeddings, starting from the $n$-th word:
 \begin{center}
-$\vec{z}_n = [\vec{r}^{w_{n-(k-1)/2}},..., \vec{r}^{w_n}, ...,\vec{r}^{w_{n+(k-1)/2)}}]^T$
+$\vec{z}_n = [\vec{r}^{w_n}, ... ,\vec{r}^{w_{n+k-1}}]^T$
 \end{center}•
-The convolutional layer computes the $j$-th element of the vector $\vec{r}_{q1} \in \mathbb{R}^{cl_u}$ as follows: 
+The convolutional layer computes the $j$-th element of the vector $\vec{r}_{q} \in \mathbb{R}^{cl_u}$ as follows: 
 \begin{equation}
-[\vec{r}_{q1}]_j = f \left( \sum_{1<n<N}[f(W^1 z_n + b^1)]_j \right)
+[\vec{r}_{q}]_j = f \left( \sum_{1<n<N-k+1}[f(W^1 z_n + b^1)]_j \right)
 \label{eq:conv}
 \end{equation}•
 where $W^1 \in \mathbb{R}^{cl_u \times dk}$ is the weight matrix of the convolutional layer and $f$ is the hyperbolic tangent function. The same matrix is used to extract local features around each word window of the given question. The global fixed-sized feature vector for the question is obtained by using the sum over all word windows.\\
@@ -153,7 +153,7 @@ After applying vertically the sum operation to the output of this layer, the res
 \end{figure}
 %-------------------------------------------------------------------------
 \subsection{In-domain Word Embeddings}    
-
+The training of in-domain word embeddings was one of the hardest task of our work. 
 %------------------------------------------------------------------------
 \section{Experiments}
 
