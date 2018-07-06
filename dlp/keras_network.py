@@ -7,7 +7,7 @@ Created on Sun Jun 10 15:31:34 2018
 
 import time
 from keras.models import Model
-from keras.layers import Input,Embedding, Conv1D, Conv2D, Activation, Dot, Lambda, Permute, Concatenate
+from keras.layers import Input,Embedding, Conv1D, Conv2D, Activation, Dot, Lambda, Permute, Concatenate, Add, Masking
 import keras.backend as K
 import tensorflow as tf
 from keras.callbacks import TensorBoard, EarlyStopping
@@ -53,48 +53,65 @@ class ModelBuilder(object):
         return Concatenate()(out_b)
 
     def buildModel(self, clu, window_size):
-        q_1= Input(shape=(self.q_length,), dtype='int32')
-        q_2= Input(shape=(self.q_length,), dtype='int32')    
-        
+        q_1= Input(shape=(None,), dtype='int32')
+        q_2= Input(shape=(None,), dtype='int32')
+
         lookup=Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length, embeddings_initializer=self.embeddings_initialize, trainable=False)
         lookup_layer_1= lookup(q_1)
         lookup_layer_2= lookup(q_2)
-
-        # q1_emb and q2_emb (?, q_length * embedding)
-        #expand = Lambda(lambda x: K.expand_dims(x, axis=-1))
-        #expand = Reshape(target_shape=(self.q_length * self.embedding_size, 1))
-        #expanded_layer_1 = Reshape(target_shape=(self.q_length * self.embedding_size, 1))(lookup_layer_1)
-        #expanded_layer_2 = Reshape(target_shape=(self.q_length * self.embedding_size, 1))(lookup_layer_2)
-        #print("Expand shape: ", expanded_layer_1.shape)
 
         conv1d = Conv1D(filters=clu, kernel_size=window_size, activation='tanh', padding='valid')
         conv_layer_1 = conv1d(lookup_layer_1)
         conv_layer_2 = conv1d(lookup_layer_2)
 
-
-        # conv2d=Conv2D(filters=self.clu, kernel_size=(self.window_size, self.embedding_size), activation='tanh', padding='valid')
-        # conv_layer_1=conv2d(expanded_layer_1)
-        # conv_layer_2=conv2d(expanded_layer_2)
-        # print("Conv shape: ", conv_layer_1.shape)
-
         sum_layer = Lambda(lambda x: K.sum(x,axis=1))
         sum_layer_1=sum_layer(conv_layer_1)
         sum_layer_2=sum_layer(conv_layer_2)
-
-#        reshape_layer = Reshape(target_shape=(self.clu,))
-#        reshape_layer_1 = reshape_layer(sum_layer_1)
-#        reshape_layer_2 = reshape_layer(sum_layer_2)
-#        print("Reshape shape: ", reshape_layer_1.shape)
-
 
         activation_layer = Activation('tanh')
         activation_1= activation_layer(sum_layer_1)
         activation_2=activation_layer(sum_layer_2)
 
         similarity_layer = Dot(axes=1, normalize=True, name='similarity')([activation_1,activation_2])
-        
-        #predictions = Lambda(lambda x: K.cast(x>=0.5, dtype='float32'), name='predictions')(similarity_layer)
+
         return Model(inputs=[q_1, q_2], outputs=similarity_layer)
+
+    # def buildModel(self, clu, window_size):
+    #     q_1 = Input(shape=(self.q_length,), dtype='int32')
+    #     q_2 = Input(shape=(self.q_length,), dtype='int32')
+    #
+    #     lookup = Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length,
+    #                        embeddings_initializer=self.embeddings_initialize, trainable=False)
+    #     lookup_layer_1 = lookup(q_1)
+    #     lookup_layer_2 = lookup(q_2)
+    #
+    #     lookup_trainable = Embedding(self.vocabulary_size, self.embedding_size, input_length=self.q_length,
+    #                                  trainable=True)
+    #     lookup_layer_trainable_1 = lookup_trainable(q_1)
+    #     lookup_layer_trainable_2 = lookup_trainable(q_2)
+    #
+    #     conv1d = Conv1D(filters=clu, kernel_size=window_size, activation='tanh', padding='valid')
+    #     conv_layer_1 = conv1d(lookup_layer_1)
+    #     conv_layer_2 = conv1d(lookup_layer_2)
+    #
+    #     conv_layer_trainable_1 = conv1d(lookup_layer_trainable_1)
+    #     conv_layer_trainable_2 = conv1d(lookup_layer_trainable_2)
+    #
+    #     conv_1 = Add()([conv_layer_1, conv_layer_trainable_1])
+    #     conv_2 = Add()([conv_layer_2, conv_layer_trainable_2])
+    #
+    #     sum_layer = Lambda(lambda x: K.sum(x, axis=1))
+    #     sum_layer_1 = sum_layer(conv_1)
+    #     sum_layer_2 = sum_layer(conv_2)
+    #
+    #
+    #     activation_layer = Activation('tanh')
+    #     activation_1 = activation_layer(sum_layer_1)
+    #     activation_2 = activation_layer(sum_layer_2)
+    #
+    #     similarity_layer = Dot(axes=1, normalize=True, name='similarity')([activation_1, activation_2])
+    #
+    #     return Model(inputs=[q_1, q_2], outputs=similarity_layer)
 
     def compileModel(self, model):
         model.compile(loss='binary_crossentropy',
