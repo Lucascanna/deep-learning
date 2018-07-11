@@ -166,7 +166,7 @@ For our experiments, we divide the dataset in the same way of the paper \cite{bo
 Tokenization is the process of breaking up a given text, in this case every question, into units called tokens. The tokens may be words or number or punctuation mark: we decide to consider only words and to disregard those tokens that are punctuation, symbols, tabulation, white spaces, articles and prepositions.
 For each word we took only its lemma. Lemmatization is a morphological analysis of words, aiming to remove inflectional forms and to return the base or dictionary form of a word, which is known as the lemma.
 
-Then we noticed that some patterns are very frequent but not so relevant in their different form. Therefore we had some other precautions:
+Then we noticed that some patterns are very frequent but not so relevant in their different forms. Therefore we had some other precautions:
 \begin{itemize}
 	\item html tags that are \texttt{code} tags are replaced by the string \texttt{thistokeniscode}
 	\item html tags that are \texttt{a} tags are replaced by the string \texttt{thistokenislink}
@@ -178,6 +178,39 @@ Then we noticed that some patterns are very frequent but not so relevant in thei
  \end{itemize}
  
 \paragraph{Experiments setup.}
+First of all we have trained the model with pretrained English Wikipedia's embeddings \footnote{\url{http://nlp.stanford.edu/data/glove.6B.zip}}. In our model we have identified the following hyperparameters: 
+\begin{itemize}
+	\item $cl_{u}$, that is the number of units of the one-dimensional convolutional layer
+	\item $k$, that is the number of successive words within a window
+\end{itemize}
+Since the hyperparameters are continuous and the hyperparameter space can be very huge, we decide to use a Gaussian Process to approximate the validation accuracy function. At each iteration of this process we sample the hyperparameters from Gaussian prior, we train the model with this configuration and we update the Gaussian prior with the validation accuracy of the trained model. Moreover we use Early Stopping technique in order to avoid overfitting. 
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=1\linewidth]{img/wiki.png}
+\end{center}
+\caption{Validation accuracy depending on the hyperparameters.}
+\label{fig:wiki}
+\end{figure}
+In Figure \ref{fig:wiki} is represented the validation accuracy resulted from different combinations during the hyperparameters tuning. For the sake of clarity we show in the figure only the best combination for each window size, but we observe that increasing too much the number of units of the convolutional layer, $cl_{u}$, provides worst performance.  As the figure indicates, decreasing the window size, $k$, provides improvements. \\~\\
+After that we train the model with AskUbuntu embeddings, in order to evaluate the impact of in-domain word embeddings on the network's performance. 
+\begin{table}
+\begin{center}
+\begin{tabular}{|l|c|}
+\hline\hline
+Word embedding & Validation accuracy \\
+\hline\hline
+Wikipedia & Frumpy \\
+AskUbuntu & Frobbly \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Validation Accuracy with word embedding pretrained on different corpora.}
+\label{table:accuracy}
+\end{table}
+As the Table \ref{table:accuracy} shows, using in-domain embeddings is more beneficial for the network. \\
+In both experiments we use Adam optimizer with learning rate $ lr=0.002 $. \\~\\
+Lastly, we experiment to add another embedding layer, initialized with AskUbuntu's embeddings and trainable. In this case we observe approximately one percent improvement.
+
 
 \paragraph{Results and discussion.}
 
