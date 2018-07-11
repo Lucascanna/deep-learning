@@ -184,32 +184,41 @@ First of all we have trained the model with pretrained English Wikipedia's embed
 	\item $k$, that is the number of successive words within a window
 \end{itemize}
 Since the hyperparameters are continuous and the hyperparameter space can be very huge, we decide to use a Gaussian Process to approximate the validation accuracy function. At each iteration of this process we sample the hyperparameters from Gaussian prior, we train the model with this configuration and we update the Gaussian prior with the validation accuracy of the trained model. Moreover we use Early Stopping technique in order to avoid overfitting. 
-\begin{figure}[t]
-\begin{center}
-\includegraphics[width=1\linewidth]{img/wiki.png}
-\end{center}
-\caption{Validation accuracy depending on the hyperparameters.}
-\label{fig:wiki}
-\end{figure}
+
 In Figure \ref{fig:wiki} is represented the validation accuracy resulted from different combinations during the hyperparameters tuning. For the sake of clarity we show in the figure only the best combination for each window size, but we observe that increasing too much the number of units of the convolutional layer, $cl_{u}$, provides worst performance.  As the figure indicates, decreasing the window size, $k$, provides improvements. \\~\\
-After that we train the model with AskUbuntu embeddings, in order to evaluate the impact of in-domain word embeddings on the network's performance. 
+After that we train the model with AskUbuntu embeddings, in order to evaluate the impact of in-domain word embeddings on the network's performance. \\
+As the Table \ref{table:accuracy} shows, using in-domain embeddings is more beneficial for the network. \\
+In both experiments we use Adam optimizer with learning rate $ lr=0.002 $. \\~\\
+Lastly, we experiment to add another embedding layer, initialized with AskUbuntu's embeddings and trainable. In this case we observe approximately one percent improvement. In the Figure \ref{fig:embeddings} it is indicated as Ubuntu multichannel.
 \begin{table}
 \begin{center}
 \begin{tabular}{|l|c|}
-\hline\hline
+\hline
 Word embedding & Validation accuracy \\
-\hline\hline
-Wikipedia & Frumpy \\
-AskUbuntu & Frobbly \\
+\hline
+Wikipedia & 86\% \\
+AskUbuntu & 90\% \\
 \hline
 \end{tabular}
 \end{center}
 \caption{Validation Accuracy with word embedding pretrained on different corpora.}
 \label{table:accuracy}
 \end{table}
-As the Table \ref{table:accuracy} shows, using in-domain embeddings is more beneficial for the network. \\
-In both experiments we use Adam optimizer with learning rate $ lr=0.002 $. \\~\\
-Lastly, we experiment to add another embedding layer, initialized with AskUbuntu's embeddings and trainable. In this case we observe approximately one percent improvement.
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=90mm, height= 55mm, scale=1]{img/wiki.png}
+\end{center}
+\caption{Validation accuracy depending on the hyperparameters.}
+\label{fig:wiki}
+\end{figure}
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=90mm, height= 55mm, scale=1]{img/embeddings_accuracy.png}
+\end{center}
+\caption{Validation Accuracy depending on the domain of the word embeddings and ????}
+\label{fig:embeddings}
+\end{figure}
+
 
 
 \paragraph{Results and discussion.}
