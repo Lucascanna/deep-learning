@@ -158,7 +158,7 @@ The training of in-domain word embeddings was one of the hardest task of our wor
 \section{Experiments}
 
 \paragraph{Datasets.}
-Our dataset is from Ask Ubuntu Community Questions and Answers site \footnote{http://askubuntu.com}. Ask Ubuntu is a community for Ubuntu users and developers, and it is part of the Stack Exchange Q\&A communities. The users of these communities can ask and answer ques- tions, and vote up and down both questions and answers. Users with high reputation become moderators and can label a new question as a duplicate to an existing question. Usually it takes five votes from different moderators to close a question or to mark it as a duplicate. 
+Our dataset is from Ask Ubuntu Community Questions and Answers site \footnote{http://askubuntu.com}. Ask Ubuntu is a community for Ubuntu users and developers, and it is part of the Stack Exchange Q\&A communities. The users of these communities can ask and answer que tions, and vote up and down both questions and answers. Users with high reputation become moderators and can label a new question as a duplicate to an existing question. Usually it takes five votes from different moderators to close a question or to mark it as a duplicate. 
 We use Ask Ubuntu data dump \footnote{ \url{https://archive.org/download/stackexchange}} provided in April 2018, that contains posts from 2010 to March 2018. From the data dump we have selected only the posts that are questions, the amount of questions is 285651. We extract all question pairs linked as duplicated and from those we consider only 15500 pairs in order to be able to compare the obtained results with the ones from the paper \cite{bogdanova2015detecting}. Afterward we have randomly generated the same number of non duplicate pair of posts. \\
 For our experiments, we divide the dataset in the same way of the paper \cite{bogdanova2015detecting}: 24K pairs for the training set, 6K pairs for the test set and 1K pairs for the validation set.
 
@@ -183,12 +183,14 @@ First of all we have trained the model with pretrained English Wikipedia's embed
 	\item $cl_{u}$, that is the number of units of the one-dimensional convolutional layer
 	\item $k$, that is the number of successive words within a window
 \end{itemize}
-Since the hyperparameters are continuous and the hyperparameter space can be very huge, we decide to use a Gaussian Process to approximate the validation accuracy function. At each iteration of this process we sample the hyperparameters from Gaussian prior, we train the model with this configuration and we update the Gaussian prior with the validation accuracy of the trained model. Moreover we use Early Stopping technique in order to avoid overfitting. 
+Since the hyperparameters are continuous and the hyperparameter space can be very huge, we decide to use a Gaussian Process to approximate the validation accuracy function. At each iteration of this process we sample the hyperparameters from Gaussian prior, we train the model with this configuration and we update the Gaussian prior with the validation accuracy of the trained model. Moreover we use Early Stopping technique in order to avoid overfitting. \\
+After that, in order to evaluate the impact of in-domain word embeddings on the network's performances, we train the model with AskUbuntu embeddings. \\
+In both experiments we use Adam optimizer initialized with learning rate $ lr=0.002 $. 
 
-In Figure \ref{fig:wiki} is represented the validation accuracy resulted from different combinations during the hyperparameters tuning. For the sake of clarity we show in the figure only the best combination for each window size, but we observe that increasing too much the number of units of the convolutional layer, $cl_{u}$, provides worst performance.  As the figure indicates, decreasing the window size, $k$, provides improvements. \\~\\
-After that we train the model with AskUbuntu embeddings, in order to evaluate the impact of in-domain word embeddings on the network's performance. \\
-As the Table \ref{table:accuracy} shows, using in-domain embeddings is more beneficial for the network. \\
-In both experiments we use Adam optimizer with learning rate $ lr=0.002 $. \\~\\
+
+\paragraph{Results and discussion.}
+As the Table \ref{table:accuracy} shows, the model trained using in-domain embeddings outperform that trained using Wikipedia's embeddings. \\
+In Figure \ref{fig:wiki} is represented the validation accuracy resulted from different combinations of hyperparameters values. For the sake of clarity we show in the figure only the best $cl_{u}$ value for each window size, but we observe that increasing too much the number of units of the convolutional layer, $cl_{u}$, provides worst performances.  As the figure indicates, smaller window sizes, provides the best performances. \\~\\
 Lastly, we experiment to add another embedding layer, initialized with AskUbuntu's embeddings and trainable. In this case we observe approximately one percent improvement. In the Figure \ref{fig:embeddings} it is indicated as Ubuntu multichannel.
 \begin{table}
 \begin{center}
@@ -218,10 +220,6 @@ AskUbuntu & 90\% \\
 \caption{Validation Accuracy depending on the domain of the word embeddings and ????}
 \label{fig:embeddings}
 \end{figure}
-
-
-
-\paragraph{Results and discussion.}
 
 
 \section{Conclusion} 
