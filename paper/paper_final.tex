@@ -15,7 +15,7 @@
 % run, let it finish, and you should be clear).
 \usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
 
-\cvprfinalcopy % *** Uncomment this line for the final submission
+%\cvprfinalcopy % *** Uncomment this line for the final submission
 
 \def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
 \def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
@@ -50,7 +50,7 @@ Politecnico di Milano\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-   In the context of online forums, although two questions may seem very different in terms of vocabulary, length and syntax, they may eventually ask the same thing. In this work, we try to detect semantically equivalent questions using a simple Convolutional Neural Network (CNN). The proposed CNN generates distributed vector representations for pairs of questions and score them using a similarity metric. This work is the replication of \cite{bogdanova2015detecting}: we basically try to perform the same experiments and compare our results with theirs. The replication turned to be not straightforward since some crucial implementation details are missing in the Bogdanova et al.'s description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following three aspects that were not explicitly treated in the paper: unequal text length, the type of convolution and the training of in-domain word embeddings. The final results we obtained are quite close to the our target; whereas the optimal parameters values of the network are quite different from \cite{bogdanova2015detecting}. It is worth clarifying that, since we used domain-specific data for both training and testing the model, the obtained performances are guaranteed to hold only for pairs of questions coming from that specific domain.
+   In the context of online forums, although two questions may seem very different in terms of vocabulary, length and syntax, they may eventually ask the same thing. In this work, we try to detect semantically equivalent questions using a simple Convolutional Neural Network (CNN). The proposed CNN generates distributed vector representations for pairs of questions and score them using a similarity metric. This work is the replication of \cite{bogdanova2015detecting}: we basically try to perform the same experiments and compare our results with theirs. The replication turned not to be straightforward since some crucial implementation details are missing in the Bogdanova et al.'s description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following three aspects that were not explicitly treated in the paper: unequal text length, the type of convolution and the training of in-domain word embeddings. The final results we obtained are quite close to our target; even the optimal hyperparameters values of the network are very similar to the ones in \cite{bogdanova2015detecting}. It is worth clarifying that, since we used domain-specific data for both training and testing the model, the obtained performances are guaranteed to hold only for pairs of questions coming from that specific domain.
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
@@ -58,16 +58,18 @@ Politecnico di Milano\\
 \section{Introduction}
 Natural Language Processing (NLP) is just one of several fields emerging from Artificial Intelligence. In NLP we want the machine to process and analyze large amount of natural language data to accomplish very interesting tasks (such as Sentiment Analysis, Language Identification and many others). Nowadays, these tasks are plenty and many works on them has been already carried out \footnote{Here is a very interesting repository collecting several NLP tasks along with their main references: \\ \url{https://github.com/Kyubyong/nlp_tasks}}. In this paper, we focus on the task of predicting whether two questions from an online forum are semantically equivalent, i.e. they can be answered by the exact same answer. This can be a very useful tool for Question-Answering community sites as they typically want to keep their databases as less redundant as possible, so to make the searches of their users both faster and more effective. Furthermore, they want to keep people from wasting their time in answering already solved questions. \\
 The main contribution of this work is \cite{bogdanova2015detecting}. In their work, Bogdanova et al. propose a simple Convolutional Neural Network (CNN) to detect semantically equivalent questions. The proposed network first transforms words into \emph{word embeddings} and then applies a convolutional layer which generates question-wide vectors representations. Finally, pairs of questions are scored using a similarity function. The most interesting experimental result is the evaluation of in-domain word embeddings versus the word embeddings generated using all of the English Wikipedia. In particular, they shown that domain-specific word embeddings achieve higher performances. \\
-
-In general, the results obtained by our implementation are very close to the ones of the replicated paper. Surprisingly, as we will discuss in Section 4, the main differences in the results are about the optimal hyper-parameter values of the network.\\
-The authors of the paper accurately described the architecture of the network, but many crucial details of the model are missing in their description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following three aspects that were not explicitly treated in the paper: 
+In general, both results and optimal hyperparameter values obtained by our implementation are very close to the ones of the replicated paper.\\
+The authors of the paper accurately described the architecture of the network, but many crucial details of the model are missing in their description. Hence, we have found quite stimulating to replicate this paper filling the holes with our own ideas. In particular, our efforts focused mainly on the following four aspects that were not explicitly treated in the paper: 
     \paragraph{Handling questions of different sizes.}
     Bogdanova et al. explicitly state that the different sizes of questions is one of the main challenges of their work. Nevertheless, they do not specify the way they solved this issue. We, therefore, tried to fix the length of each question to the \textbf{maximum} and to the \textbf{mean} length of all the questions. The first approach resulted to yield the greater accuracy.
     \paragraph{The type of convolution.}
     For the implementation of our network we used a 1-dimensional convolution. Indeed, text can be seen as images with the input maps having only one dimension (height, without width) corresponding to the question length and where the number of input maps is nothing but the size of the word embeddings. The type of convolution represents another missing detail of \cite{bogdanova2015detecting}.    
     \paragraph{The training of in-domain word embeddings.}
-    The paper does not provide any information about the model used to train in-domain word embeddings. Initially, we tried to build our own \emph{word2vec} model \cite{mikolov2013distributed} to generate word-embeddings using as training data the same dataset used to train the main network \footnote{To do so we followed this good tutorial: \url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}}. However, the training of this network turned out to be very slow and resulting embeddings performed poorly. \\
-    We, then, decided to use Gensim, a very simple library which generates word-embeddings given the training data. The resulting embeddings performed very well, allowing the main network to achieve up to 90\% of accuracy on the validation set.
+    The paper does not provide any information about the model used to train in-domain word embeddings. Initially, we tried to build our own \emph{word2vec} model \cite{mikolov2013distributed} to generate word-embeddings using the same dataset employed to train the main network \footnote{To do so we followed this good tutorial: \url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}}. However, the training of this network turned out to be very slow and resulting embeddings performed poorly. \\
+    We, then, decided to use Gensim \footnote{\url{https://radimrehurek.com/gensim/index.html}}, a very simple library which generates word-embeddings given the training data. The resulting embeddings performed very well, allowing the main network to achieve up to 90\% of accuracy on the validation set.
+    	\paragraph{CNN Multi-channel}
+    	As suggested by Kim in \cite{kim2014convolutional}, we also tried a simple variant of the CNN proposed in \cite{bogdanova2015detecting}. The first hidden layer of this network has two ``channels'' of word-embeddings: one that is kept static during training and one that is fine-tuned via backpropagation. This modification brings an improvement of around 1\% to the performances of the network.  
+
 
 %------------------------------------------------------------------------
 \section{Related work}
@@ -79,27 +81,26 @@ To tackle the problem of sentences with different lengths, Socher et al. \cite{s
 In \cite{zhou2015c}, a novel model called C-LSTM is presented: this model stack CNN and LSTM in a unified architecture for semantic sentence modeling. In this way, they are able to combine the strengths of both architectures. In particular, they apply CNN to text data and feed consecutive window features directly to LSTM. In this way, their architecture enables LSTM to learn long-range dependencies from higher-order sequential features.
 %------------------------------------------------------------------------
 \section{Proposed approach}
-In this section we present our strategy for detecting semantically equivalent questions. In subsection 3.1, we describe in detail the architecture of the Neural Network. Then, in subsequent subsections, we focus on the decisions we have made about the things left unspecified by Bogdanova et al.
+In this section we present our strategy for detecting semantically equivalent questions. In Subsection 3.1, we describe in detail the architecture of the Neural Network. Then, in subsequent subsections, we focus on the decisions we have made about the things left unspecified by Bogdanova et al.
 %-------------------------------------------------------------------------
 \subsection{Neural Network Architecture}
-As detailed in Figure \ref{fig:network}, the input for the network is tokenized text strings of the two questions. In the first step, the CNN transforms words into real valued feature vectors, also known as \emph{word embeddings}. Next, a convolutional layer is used to construct two distributed vector representations $\vec{r}_{q1}$ and $\vec{r}_{q2}$, one for each input question. Finally, the CNN computes a similarity score between $\vec{r}_{q1}$ and $\vec{r}_{q2}$. Pairs of questions with similarity above a threshold are considered duplicates. Each of these step is explained in more details in the following.
+As detailed in Figure \ref{fig:network}, the inputs for the network are tokenized text strings of the two questions. In the first step, the CNN transforms words into real valued feature vectors, also known as \emph{word embeddings}. Next, a convolutional layer is used to construct two distributed vector representations $\vec{r}_{q1}$ and $\vec{r}_{q2}$, one for each input question. Finally, the CNN computes a similarity score between $\vec{r}_{q1}$ and $\vec{r}_{q2}$. Pairs of questions with similarity above a threshold are considered duplicates. Each of these step is explained in more details in the following.
 \begin{figure}[t]
 \begin{center}
-%\fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
 \includegraphics[width=0.8\linewidth]{img/network.png}
 \end{center}
 \caption{The network architecture.}
 \label{fig:network}
-%\label{fig:onecol}
 \end{figure}
 
 \subsubsection{From text to embeddings}
 The first layer of the network transforms words into representations that capture syntactic and semantic information about the words. The initialization of this layer requires two strictly correlated objects:
 \begin{itemize}
-\item \textbf{The vocabulary}: a dictionary $V$ associating each word of the corpora used to train the embeddings to an integer index. In this vocabulary, we must also reserve an index for all the words which are not present in the vocabulary. Best practices suggest to have the index $0$ for the \emph{unknown} words and then having the other indexes ordered by most common words.
+\item \textbf{The vocabulary}: a dictionary $V$ associating each word of the corpora used to train the embeddings to an integer index. In this vocabulary, we must also reserve an index for all the words which are not present in the vocabulary itself. Best practices suggest to have the index $0$ for the \emph{unknown} words and then having the other indexes ordered by most common words.
 \item \textbf{The pre-trained word-embeddings}: a matrix $W_0 \in \mathbb{R}^{|V| \times d}$ where $d$ is the size of the word embeddings. In this matrix, the $i$-th row corresponds to the word embedding of the $i$-th word in the vocabulary.
 \end{itemize}•
 The input of this layer is a 1-dimensional vector $\vec{q}=[w_1, w_2, ... , w_N]$ where the element $w_i$ is an integer number corresponding to the index of the $i$-th word of the question. We initialize the layer with our pre-trained word embeddings \footnote{either the word embeddings trained by us or the those trained by Google}, which is the matrix $W_0$. This layer, for each index $w_i$ of the input vector, retrieves the corresponding vector representation $\vec{r}^{w_i}$ in matrix $W_0$. Hence, the output is a matrix $X_0 \in \mathbb{R}^{N \times d}$.\\
+In the simplest implementation of the network, the matrix $W_0$ is kept static during the training. In Section \ref{multichannel} we describe a simple modification in which this matrix becomes trainable.\\
 Notice that using pre-trained word embeddings, implies that the values of both the $d$ and $|V|$ have been already decided by those who trained the matrix $W_0$.
 
 \subsubsection{The convolution}
@@ -131,17 +132,17 @@ As starting point let's understand why unequal text length is a problem in NLP. 
 \item Look up embedding vectors for IDs and construct a 2D tensor that are input to subsequent layers.
 \end{itemize}•
 Now, most neural network APIs (such as Keras) are “define-and-run” so we cannot change the dimensions of various matrices and tensors during runtime. All the techniques that can be used to tackle this issue force us to introduce new hyper-parameters or work-around in our model which are not fundamental for  the NLP task but are present to only handle unequal text lengths.\\
-We decided to try two of these techniques, which we found out to be the best practices:
+We decided to try two of these techniques, which are considered best practices:
 \begin{itemize}
 	\item Fixing the length of all the questions to the \textbf{maximum} length. All the questions that are shorter are padded using the \emph{UNKNOWN} word (index $0$ of the vocabulary).
 	\item Fixing the length of all the questions to the \textbf{mean} length. All the questions that are shorter are padded as in the case above; all the questions that are longer are chopped.
 \end{itemize}
 To keep the architecture of our network as simpler as possible we decided to apply this techniques as a preprocessing phase, without adding any further layer to the network architecture. Therefore, our network accepts as input only questions of the same length.\\
-The experimental results show that the \emph{max} approach provides the best performances. This is probably due to the fact that the \emph{mean} approach is very likely to drop important semantic information from the sentence. It is worth mentioning that, in order for the \emph{max} approach to perform at its best, it can be a good choice dropping the outliers, i.e. the questions that are too long with respect to the other observations.
+
 %-------------------------------------------------------------------------
 \subsection{Type of convolution}
 
-To implement the convolution described in Section 3.1.2., we decided to use a 1-dimensional convolutional layer. The reason behind this choice is that, as images are seen as three input maps (R,G,B) where each map is a 2-dimensional array (matrix) with height and width, similarly text can be seen as $d$ input maps where each map has only one dimension which is the length of the question. This interpretation of the 1-dimensional convolution is exemplified in Figure \ref{fig:conv}.\\
+To implement the convolution described in Section 3.1.2., we decided to use a 1-dimensional convolutional layer. The reason behind this choice is that, as images are seen as three input maps (R,G,B) where each map is a 2-dimensional array (height and width), similarly, text can be seen as $d$ input maps where each map has only one dimension which is the length of the question. This interpretation of the 1-dimensional convolution is exemplified in Figure \ref{fig:conv}.\\
 After applying vertically the sum operation to the output of this layer, the resulting vector is exactly the one described by Equation \ref{eq:conv}    
 
 \begin{figure}[t]
@@ -152,8 +153,10 @@ After applying vertically the sum operation to the output of this layer, the res
 \label{fig:conv}
 \end{figure}
 %-------------------------------------------------------------------------
-\subsection{In-domain Word Embeddings}    
-The training of in-domain word embeddings was one of the hardest task of our work. 
+\subsection{CNN Multichannel}    \label{multichannel}
+Taking inspiration from \cite{kim2014convolutional}, we tried a simple modification of the network proposed by \cite{bogdanova2015detecting}. The modified model has two matrices of word embeddings. Each matrix of embeddings is treated as a ‘channel’ and each filter is applied to both channels, but gradients are backpropagated only through one of the channels. Hence the model is able to fine-tune one matrix of embeddings while keeping the other static. Both channels are initialized with pre-trained word embeddings. \\
+The outputs of the first hidden layer, in this case, are two matrices $X_0', X_0'' \in \mathbb{R}^{N \times d}$. The matrix $X_0 \in \mathbb{R}^{N \times 2d}$ will be the horizontal concatenation of $X_0'$ and $X_0''$.
+  
 %------------------------------------------------------------------------
 \section{Experiments}
 
@@ -163,7 +166,7 @@ We use Ask Ubuntu data dump \footnote{ \url{https://archive.org/download/stackex
 For our experiments, we divide the dataset in the same way of the paper \cite{bogdanova2015detecting}: 24K pairs for the training set, 6K pairs for the test set and 1K pairs for the validation set.
 
 \paragraph{Tokenization.}
-Tokenization is the process of breaking up a given text, in this case every question, into units called tokens. The tokens may be words or number or punctuation mark: we decide to consider only words and to disregard those tokens that are punctuation, symbols, tabulation, white spaces, articles and prepositions.
+Tokenization is the process of breaking up a given text, in this case every question, into units called tokens. The tokens may be words or number or punctuation mark: we decide to consider only words and to disregard those tokens that are punctuation, articles and prepositions.
 For each word we took only its lemma. Lemmatization is a morphological analysis of words, aiming to remove inflectional forms and to return the base or dictionary form of a word, which is known as the lemma.
 
 Then we noticed that some patterns are very frequent but not so relevant in their different forms. Therefore we had some other precautions:
@@ -189,9 +192,10 @@ In both experiments we use Adam optimizer initialized with learning rate $ lr=0.
 
 
 \paragraph{Results and discussion.}
-As the Table \ref{table:accuracy} shows, the model trained using in-domain embeddings outperform that trained using Wikipedia's embeddings. \\
-In Figure \ref{fig:wiki} is represented the validation accuracy resulted from different combinations of hyperparameters values. For the sake of clarity we show in the figure only the best $cl_{u}$ value for each window size, but we observe that increasing too much the number of units of the convolutional layer, $cl_{u}$, provides worst performances.  As the figure indicates, smaller window sizes, provides the best performances. \\~\\
-Lastly, we experiment to add another embedding layer, initialized with AskUbuntu's embeddings and trainable. In this case we observe approximately one percent improvement. In the Figure \ref{fig:embeddings} it is indicated as Ubuntu multichannel.
+The experimental results show that the \emph{max} approach provides the best performances. This is probably due to the fact that the \emph{mean} approach is very likely to drop important semantic information from the sentence. However, it is worth mentioning that, in order for the \emph{max} approach to perform at its best, it is  definitely a good choice dropping the outliers, i.e. the questions that are too long with respect to the other observations. Figure \ref{fig:lens} shows the distribution of the question lengths of our dataset: it is evident that more than 95\% of the questions contains less than 400 words. Hence, we decide to drop the remaining 5\% of the questions.\\
+In Figure \ref{fig:wiki} is represented the validation accuracy resulted from different combinations of hyperparameters values. For the sake of clarity we show in the figure only the best $cl_{u}$ value for each window size, but we observe that increasing too much the number of units of the convolutional layer, $cl_{u}$, provides worst performances.  As the figure indicates, smaller window sizes, provides the best performances.\\
+Figure \ref{fig:embeddings} shows that, the addition of a trainable embedding layer, provides a performance improvement of around 1\%. The figure also highlights that (as stated in Table \ref{table:accuracy}) the model trained with in-domain embeddings outperform that trained using Wikipedia's embeddings.\\
+The best model possible is, therefore, the CNN Multi-Channel initialized using in-domain word embeddings with $cl_u=300$ and $k=2$. It achieves 89\% accuracy on the test set.
 \begin{table}
 \begin{center}
 \begin{tabular}{|l|c|}
@@ -200,12 +204,20 @@ Word embedding & Validation accuracy \\
 \hline
 Wikipedia & 86\% \\
 AskUbuntu & 90\% \\
+AskUbuntu multichannel & ??\% \\
 \hline
 \end{tabular}
 \end{center}
 \caption{Validation Accuracy with word embedding pretrained on different corpora.}
 \label{table:accuracy}
 \end{table}
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=90mm, height= 55mm, scale=1]{img/Histogram.png}
+\end{center}
+\caption{Distribution of question lengths.}
+\label{fig:lens}
+\end{figure}
 \begin{figure}[t]
 \begin{center}
 \includegraphics[width=90mm, height= 55mm, scale=1]{img/wiki.png}
@@ -217,45 +229,14 @@ AskUbuntu & 90\% \\
 \begin{center}
 \includegraphics[width=90mm, height= 55mm, scale=1]{img/embeddings_accuracy.png}
 \end{center}
-\caption{Validation Accuracy depending on the domain of the word embeddings and ????}
+\caption{Validation Accuracy using Wikipedia's embeddings, AskUbuntu embeddings and CNN Multi-channel}
 \label{fig:embeddings}
 \end{figure}
 
-
 \section{Conclusion} 
+This work attempts to replicate the Bogdanova et al.' paper \cite{bogdanova2015detecting}. The obtained results are very close to our target. The in-domain word embeddings perform better than general-ones. The \emph{max} approach results to be the best solution for the problem of unequal text lengths. The CNN Multi-channel model brings a performance improvement of 1\%. The final model achieves 89\% accuracy on the test set.\\
+A possible extension of this work could be to use an LSTM approach to solve the problem of unequal text lengths. Moreover, other deeper architectures could be explored.
 
-
-%\begin{figure*}[t]
-%\begin{center}
-%\fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
-%\end{center}
-%   \caption{Example of a short caption, which should be centered.}
-%\label{fig:short}
-%\end{figure*}
-
-%-------------------------------------------------------------------------
-\section*{Acknowledgements}
-
-
-%-------------------------------------------------------------------------
-\appendix
-\section{Supplementary Material} 
-
-
-%\begin{table}[t]
-%\begin{center}
-%\begin{tabular}{|l|c|}
-%\hline
-%Method & Frobnability \\
-%\hline\hline
-%Theirs & Frumpy \\
-%Yours & Frobbly \\
-%Ours & Makes one's heart Frob\\
-%\hline
-%\end{tabular}
-%\end{center}
-%\caption{Results.   Ours is better.}
-%\end{table}
 
 %-------------------------------------------------------------------------
 
