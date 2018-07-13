@@ -204,7 +204,7 @@ Word embedding & Validation accuracy \\
 \hline
 Wikipedia & 86\% \\
 AskUbuntu & 90\% \\
-AskUbuntu multichannel & ??\% \\
+AskUbuntu multichannel & 91\% \\
 \hline
 \end{tabular}
 \end{center}
@@ -234,9 +234,10 @@ AskUbuntu multichannel & ??\% \\
 \end{figure}
 
 \section{Conclusion} 
-This work attempts to replicate the Bogdanova et al.' paper \cite{bogdanova2015detecting}. The obtained results are very close to our target. The in-domain word embeddings perform better than general-ones. The \emph{max} approach results to be the best solution for the problem of unequal text lengths. The CNN Multi-channel model brings a performance improvement of 1\%. The final model achieves 89\% accuracy on the test set.\\
-A possible extension of this work could be to use an LSTM approach to solve the problem of unequal text lengths. Moreover, other deeper architectures could be explored.
 
+In this paper, we attempts to replicate the Bogdonova et al. paper \cite{bogdanova2015detecting} that propose a method for identifying semantically equivalent questions based on a convolutional neural network. 
+We solve the problem of unequal text legths by considering the \emph{max} length, which reaches better performance with respect to the mean approach. We experimentally show that the proposed CNN achieves high accuracy especially when the word embeddings are pre-trained on in-domain data. In particular we found out that the CNN Multi-channel model brings a performance improvement of one-percent with respect to the model with only one matrix of word embeddings . This model achieves 89\% accuracy on the test set, that is a result very close to the one of our target.\\
+A possible extension of this work could be to use an LSTM approach to solve the problem of unequal text lengths. Moreover, other deeper architectures could be explored.
 
 %-------------------------------------------------------------------------
 
