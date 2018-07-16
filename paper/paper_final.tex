@@ -67,7 +67,7 @@ The authors of \cite{bogdanova2015detecting} accurately describe the architectur
     \paragraph{The type of convolution.}
     For the implementation of our network we use a 1-dimensional convolution. Indeed, text can be seen as images with the input maps having only one dimension (height, without width) corresponding to the question length and where the number of input maps is nothing but the size of the word embeddings. The type of convolution represents another missing detail of \cite{bogdanova2015detecting}.    
     \paragraph{The training of in-domain word embeddings.}
-    The paper does not provide any information about the model adopted to train in-domain word embeddings. Initially, we tried to build our own \emph{word2vec} model \cite{mikolov2013distributed} trained with the same dataset employed to train the main network \footnote{To do so we followed this good tutorial: \url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}}. However, the training of this network turned out to be very slow and the resulting embeddings performed poorly. \\
+    The paper \cite{bogdanova2015detecting} does not provide any information about the model adopted to train in-domain word embeddings. Initially, we tried to build our own \emph{word2vec skip-gram} model \cite{mikolov2013distributed} trained with the same dataset employed to train the main network \footnote{To do so we followed this good tutorial: \url{http://adventuresinmachinelearning.com/word2vec-keras-tutorial/}}. However, the training of this network turned out to be very slow and the resulting embeddings performed poorly. \\
     We, then, decided to use Gensim \footnote{\url{https://radimrehurek.com/gensim/index.html}}, a very simple library which generates word-embeddings given the training data. The resulting embeddings perform very well, allowing the main network to achieve up to 90\% of accuracy on the validation set.
     	\paragraph{CNN Multi-channel}
     	As suggested by Kim in \cite{kim2014convolutional}, we also investigate a simple variant of the CNN proposed in \cite{bogdanova2015detecting}. The first hidden layer of this network has two ``channels'' of word-embeddings: one that is kept static during training and one that is fine-tuned via backpropagation. This modification brings an improvement of around 1\% to the performances of the network.  
@@ -83,10 +83,10 @@ To tackle the problem of sentences with different lengths, Socher et al. \cite{s
 In \cite{zhou2015c}, a novel model called C-LSTM is presented: this model stack CNN and LSTM in a unified architecture for semantic sentence modeling. In this way, they are able to combine the strengths of both architectures. In particular, they apply CNN to text data and feed consecutive window features directly to LSTM. In this way, their architecture enables LSTM to learn long-range dependencies from higher-order sequential features.
 %------------------------------------------------------------------------
 \section{Proposed approach}
-In this section we present our strategy for detecting semantically equivalent questions. In Subsection 3.1, we describe in detail the architecture of the Neural Network. Then, in subsequent subsections, we focus on the decisions we have made about the things left unspecified by Bogdanova et al.
+In this section we present our strategy for detecting semantically equivalent questions. In Subsection 3.1, we describe in detail the architecture of the Neural Network. Then, in subsequent subsections, we focus on the decisions we have made about the aspects left unspecified by Bogdanova et al.
 %-------------------------------------------------------------------------
 \subsection{Neural Network Architecture}
-As detailed in Figure \ref{fig:network}, the inputs for the network are tokenized text strings of the two questions. In the first step, the CNN transforms words into real valued feature vectors, also known as \emph{word embeddings}. Next, a convolutional layer is used to construct two distributed vector representations $\vec{r}_{q1}$ and $\vec{r}_{q2}$, one for each input question. Finally, the CNN computes a similarity score between $\vec{r}_{q1}$ and $\vec{r}_{q2}$. Pairs of questions with similarity above a threshold are considered duplicates. Each of these step is explained in more details in the following.
+As detailed in Figure \ref{fig:network}, the inputs for the network are tokenized text strings of the two questions. In the first step, the CNN transforms words into real valued feature vectors, also known as \emph{word embeddings}. Next, a convolutional layer is used to construct two distributed vector representations $\vec{r}_{q_1}$ and $\vec{r}_{q_2}$, one for each input question. Finally, the CNN computes a similarity score between $\vec{r}_{q_1}$ and $\vec{r}_{q_2}$. Pairs of questions with similarity above a threshold are considered duplicates. Each of these step is explained in more details in the following.
 \begin{figure}[t]
 \begin{center}
 \includegraphics[width=0.8\linewidth]{img/network.png}
@@ -100,30 +100,30 @@ The first layer of the network transforms words into representations that captur
 \begin{itemize}
 \item \textbf{The vocabulary}: a dictionary $V$ associating each word of the corpora used to train the embeddings to an integer index. In this vocabulary, we must also reserve an index for all the words which are not present in the vocabulary itself. Best practices suggest to have the index $0$ for the \emph{unknown} words and then having the other indexes ordered by most common words.
 \item \textbf{The pre-trained word-embeddings}: a matrix $W_0 \in \mathbb{R}^{|V| \times d}$ where $d$ is the size of the word embeddings. In this matrix, the $i$-th row corresponds to the word embedding of the $i$-th word in the vocabulary.
-\end{itemize}•
+\end{itemize}
 The input of this layer is a 1-dimensional vector $\vec{q}=[w_1, w_2, ... , w_N]$ where the element $w_i$ is an integer number corresponding to the index of the $i$-th word of the question. We initialize the layer with our pre-trained word embeddings \footnote{either the word embeddings trained by us or the those trained by Google}, which is the matrix $W_0$. This layer, for each index $w_i$ of the input vector, retrieves the corresponding vector representation $\vec{r}^{w_i}$ in matrix $W_0$. Hence, the output is a matrix $X_0 \in \mathbb{R}^{N \times d}$.\\
 In the simplest implementation of the network, the matrix $W_0$ is kept static during the training. In Section \ref{multichannel} we describe a simple modification in which this matrix becomes trainable.\\
 Notice that using pre-trained word embeddings, implies that the values of both the $d$ and $|V|$ have been already decided by those who trained the matrix $W_0$.
 
 \subsubsection{The convolution}
-We use a convolutional layer to compute the question-wide distributed vector representations $\vec{r}_{q1}$ and $\vec{r}_{q2}$. For each question, the convolutional layer first produces local features around each word in the question. Then, it combines these local features using a sum operation to create a fixed-sized feature vector (representation) for the question.\\
+We use a convolutional layer to compute the question-wide distributed vector representations $\vec{r}_{q_1}$ and $\vec{r}_{q_2}$. For each question, the convolutional layer first produces local features around each word in the question. Then, it combines these local features using a sum operation to create a fixed-sized feature vector (representation) for the question.\\
 Given a question $q$, the convolutional layer applies a matrix-vector operation to each window of size $k$ of successive windows in $\vec{q}_{emb} = [\vec{r}^{w_1},\vec{r}^{w_2}, ..., \vec{r}^{w_N}]$. Let us define the vector $\vec{z}_n \in \mathbb{R}^{dk}$ as the concatenation of a sequence of $k$ word embeddings, starting from the $n$-th word:
 \begin{center}
 $\vec{z}_n = [\vec{r}^{w_n}, ... ,\vec{r}^{w_{n+k-1}}]^T$
-\end{center}•
+\end{center}
 The convolutional layer computes the $j$-th element of the vector $\vec{r}_{q} \in \mathbb{R}^{cl_u}$ as follows: 
 \begin{equation}
 [\vec{r}_{q}]_j = f \left( \sum_{1<n<N-k+1}[f(W^1 z_n + b^1)]_j \right)
 \label{eq:conv}
-\end{equation}•
+\end{equation}
 where $W^1 \in \mathbb{R}^{cl_u \times dk}$ is the weight matrix of the convolutional layer and $f$ is the hyperbolic tangent function. The same matrix is used to extract local features around each word window of the given question. The global fixed-sized feature vector for the question is obtained by using the sum over all word windows.\\
 Matrix $W^1$ and vector $b^1$ are parameters to be learned. The number of convolutional units $cl_u$ (which corresponds to the size of the question representation), and the size of the word context window $k$ are hyper-parameters to be tuned. 
 
 \subsubsection{Similarity score}
-Given $\vec{r}_{q1}$ and $\vec{r}_{q2}$, i.e. the representations for the input pair of questions $(q_1, q_2)$, the last layer of the CNN computes a similarity score between $q_1$ and $q_2$. In our experiments we use the cosine similarity, i.e. the scalar product of the two normalized vectors:
+Given $\vec{r}_{q_1}$ and $\vec{r}_{q_2}$, i.e. the representations for the input pair of questions $(q_1, q_2)$, the last layer of the CNN computes a similarity score between $q_1$ and $q_2$. In our experiments we use the cosine similarity, i.e. the scalar product of the two normalized vectors:
 \begin{center}
-$s(q_1, q_2) = \frac{\vec{r}_{q1}}{\lVert \vec{r}_{q1} \rVert} \cdot \frac{\vec{r}_{q2}}{\lVert \vec{r}_{q2} \rVert}$
-\end{center}•
+$s(q_1, q_2) = \frac{\vec{r}_{q_1}}{\lVert \vec{r}_{q_1} \rVert} \cdot \frac{\vec{r}_{q_2}}{\lVert \vec{r}_{q_2} \rVert}$
+\end{center}
 
 %-------------------------------------------------------------------------
 \subsection{Question of different length}
@@ -132,7 +132,7 @@ As starting point let's understand why unequal text length is a problem in NLP. 
 \item Convert text to tokens
 \item Convert tokens to token IDs
 \item Look up embedding vectors for IDs and construct a 2D tensor that are input to subsequent layers.
-\end{itemize}•
+\end{itemize}
 Now, most neural network APIs (such as Keras) are “define-and-run” so we cannot change the dimensions of various matrices and tensors during runtime. All the techniques that can be used to tackle this issue force us to introduce new hyper-parameters or work-around in our model which are not fundamental for  the NLP task but are present to only handle unequal text lengths.\\
 Here we explore two of these techniques, which are considered best practices:
 \begin{itemize}
@@ -164,14 +164,14 @@ The outputs of the first hidden layer, in this case, are two matrices $X_0', X_0
 
 \paragraph{Datasets.}
 Our dataset is from Ask Ubuntu Community Questions and Answers site \footnote{http://askubuntu.com}. Ask Ubuntu is a community for Ubuntu users and developers, and it is part of the Stack Exchange Q\&A communities. The users of these communities can ask and answer questions, and vote up and down both questions and answers. Users with high reputation become moderators and can label a new question as a duplicate to an existing question. Usually it takes five votes from different moderators to close a question or to mark it as a duplicate. 
-We use Ask Ubuntu data dump \footnote{ \url{https://archive.org/download/stackexchange}} provided in April 2018, that contains posts from 2010 to March 2018. From this data dump we select only the posts that are questions, the amount of questions is 285651. The text of these questions is the training data for generating in-domain word-embeddings through Gensis. We, then, extract all question pairs linked as duplicated and we assign them a positive label. Since we want to test the performances of our model against the ones obtained by Bogdanova et al., we keep the same dataset size: therefore we consider only 15500 pairs. Finally, we randomly generate the same number of non-duplicated pair of questions (negative samples). \\
-The final dataset contains 30K samples and it is perfectly balanced. For our experiments, we divide the data as done in \cite{bogdanova2015detecting}: 24K pairs for the training set, 6K pairs for the test set and 1K pairs for the validation set.
+We use Ask Ubuntu data dump \footnote{ \url{https://archive.org/download/stackexchange}} provided in April 2018, that contains posts from 2010 to March 2018. From this data dump we select only the posts that are questions, the amount of questions is $285\,651$. The text of these questions is used for training both the Gensim word2vec model and the CNN. We, then, extract all question pairs linked as duplicated and we assign them a positive label. Since we want to test the performances of our model against the ones obtained by Bogdanova et al., we keep the same dataset size: therefore we consider only $15\,500$ pairs. Finally, we randomly generate the same number of non-duplicated pair of questions (negative samples). \\
+The final dataset contains 31K samples and it is perfectly balanced. For our experiments, we divide the data as done in \cite{bogdanova2015detecting}: 24K pairs for the training set, 6K pairs for the test set and 1K pairs for the validation set.
 
 \paragraph{Tokenization.}
 Tokenization is the process of breaking up a given text, in this case every question, into units called tokens. The tokens may be words or number or punctuation mark: in this work, we consider only words discarding those tokens that are punctuation, articles and prepositions.
 For each word we took only its \emph{lemma}. Lemmatization is a morphological analysis of words, aiming to remove inflectional forms and to return the base or dictionary form of a word, which is known as the \emph{lemma}.
 
-Moreover, we notice that some patterns are very frequent in our text data but not so relevant in their different forms. Therefore we take some other precautions:
+Moreover, we notice that some patterns are very frequent in our text data but not relevant in their different forms. Therefore we take some other precautions:
 \begin{itemize}
 	\item html tags that are \texttt{code} tags are replaced by the string \texttt{thistokeniscode}
 	\item html tags that are \texttt{a} tags are replaced by the string \texttt{thistokenislink}
